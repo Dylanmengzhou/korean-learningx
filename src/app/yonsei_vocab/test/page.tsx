@@ -1,21 +1,14 @@
 "use client";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { PartyPopper } from 'lucide-react';
+import { Annoyed } from 'lucide-react';
+import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
 interface Word {
 	id: number;
 	korean: string;
@@ -27,6 +20,8 @@ interface Word {
 	chinese: string;
 	status: number;
 }
+
+// ------------------ 相关异步操作 ------------------
 async function fetchWords(
 	volume?: number,
 	bookSeries?: string,
@@ -73,45 +68,63 @@ async function updateDictationStatus(updates: {
 		throw error;
 	}
 }
+
+// ------------------ 组件主体 ------------------
 const TestPage = () => {
 	const [index, setIndex] = useState(0);
 	const [isFocused, setIsFocused] = useState(false);
 	const [words, setWords] = useState<Word[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [isAnimating, setIsAnimating] = useState(false);
 	const [inputValue, setInputValue] = useState("");
-	const [correct, setCorrect] = useState(0);
+	const [correct, setCorrect] = useState(0); // 当前题的对错状态：1正确 -1错误 0尚未判断
+	const inputRef = useRef<HTMLInputElement>(null);
+
 	const searchParams = useSearchParams();
 	const volume = searchParams.get("volume");
 	const bookSeries = searchParams.get("bookSeries");
 	const chapter = searchParams.get("chapter");
 	const status = searchParams.get("status");
+
 	const [statusTitle, setStatusTitle] = useState("");
 	const [chapterTitle, setChapterTitle] = useState("");
 	const [volumeTitle, setVolumeTitle] = useState("");
-	const [correctList, setCorrectList] = useState<number[]>([]); // 1: correct, -1: wrong, 0: not answered
+
+	// correctList 用于整体记录每道题的状态
+	const [correctList, setCorrectList] = useState<number[]>([]);
+	// 用于记录每道题用户输入过的答案（可以回看或默认填充）
 	const [inputWordHistory, setInputWordHistory] = useState<string[]>(
 		[]
 	);
+
 	const [isStarted, setIsStarted] = useState(false);
+
+	// 弹窗状态
 	const [popWindow, setPopWindow] = useState(false);
+
 	// 定义一个 ref 用于存放全局唯一的 Audio 实例
 	const audioRef = useRef<HTMLAudioElement | null>(null);
+
+	// 是否正在切换题，避免重复点
 	const [isNavigating, setIsNavigating] = useState(false);
+
+	// ------------------ 初始化与音频 ref ------------------
 	useEffect(() => {
-		// 在组件第一次挂载时创建 Audio 实例并保存在 ref 中
 		audioRef.current = new Audio();
 		return () => {
-			// 在组件卸载时，如果还在播放则停止
 			audioRef.current?.pause();
 			audioRef.current = null;
 		};
 	}, []);
-	const handleStart = () => {
-		setIsStarted(true);
-		// 播放第一个单词
-		handlePlay();
-	};
 
+	const handleStart = () => {
+		setIsAnimating(true);
+		setTimeout(() => {
+			setIsStarted(true);
+			setIsAnimating(false); // 动画结束后恢复
+			handlePlay();
+		}, 500); // 控制动画时长
+	};
 	useEffect(() => {
 		// 如果数组不为空或索引有效，再播放
 		if (words.length > 0 && index < words.length) {
@@ -119,6 +132,7 @@ const TestPage = () => {
 		}
 	}, [index]);
 
+	// ------------------ 加载单词数据 ------------------
 	useEffect(() => {
 		async function loadWords() {
 			setLoading(true);
@@ -130,6 +144,8 @@ const TestPage = () => {
 					Number(status)
 				);
 				setWords(data);
+
+				// 状态文字
 				switch (status) {
 					case "1":
 						setStatusTitle("认识");
@@ -145,6 +161,7 @@ const TestPage = () => {
 						break;
 				}
 
+				// 单元文字
 				switch (chapter) {
 					case "1":
 						setChapterTitle("第一单元");
@@ -181,6 +198,7 @@ const TestPage = () => {
 						break;
 				}
 
+				// 册数文字
 				switch (volume) {
 					case "1":
 						setVolumeTitle("第一册");
@@ -214,130 +232,160 @@ const TestPage = () => {
 		loadWords();
 	}, []);
 
-	const handleNext = () => {
-		if (isNavigating) return;
-		setIsNavigating(true);
-		// 1. 先把当前输入存到历史中
-		setInputWordHistory((prev) => {
-			const newArr = [...prev];
-			newArr[index] = inputValue;
-			return newArr;
-		});
-
-		if (inputValue === words[index].chinese) {
-			setCorrect(1);
-			console.log("correct");
-
-			// 延迟 1 秒后切换到下一个单词
+	useEffect(() => {
+		// 只有在开始测试后，才自动聚焦（可选条件）
+		if (isStarted) {
+			inputRef.current?.focus();
 		}
-		if (inputValue !== words[index].chinese) {
-			setPopWindow(true);
-			console.log("wrong");
-			setCorrect(-1);
-		}
-		if (correctList[index] === undefined) {
-			setTimeout(() => {
-				setCorrect(0);
+	}, [index, isStarted]);
 
-				// 只有当下一题索引合法时才切换
-				if (index < words.length - 1) {
-					const newIndex = index + 1;
-					setIndex(newIndex);
-					// 2. 从历史记录里拿对应索引的输入给到inputValue
-					setInputValue(inputWordHistory[newIndex] ?? "");
-				}
-			}, 1000);
-			setTimeout(() => {
-				setIsNavigating(false);
-			}, 1000);
-		} else {
-			setCorrect(0);
-
-			// 只有当下一题索引合法时才切换
-			if (index < words.length - 1) {
-				const newIndex = index + 1;
-				setIndex(newIndex);
-				// 2. 从历史记录里拿对应索引的输入给到inputValue
-				setInputValue(inputWordHistory[newIndex] ?? "");
-			}
-			setTimeout(() => {
-				setIsNavigating(false);
-			}, 1000);
-		}
-	};
-
-	const handlePrev = () => {
-		if (isNavigating) return;
-		setIsNavigating(true);
-		setInputWordHistory((prev) => {
-			const newArr = [...prev];
-			newArr[index] = inputValue;
-			return newArr;
-		});
-		if (index > 0) {
-			const newIndex = index - 1;
-			setIndex(newIndex);
-			// 2. 从历史记录里拿对应索引的输入给到inputValue
-			setInputValue(inputWordHistory[newIndex] ?? "");
-		}
-		setTimeout(() => {
-			setIsNavigating(false);
-		}, 1000);
-	};
-
+	// ------------------ 播放音频 ------------------
 	const handlePlay = () => {
 		if (!audioRef.current || !words[index]) return;
-
-		// 每次播放前，先停止、重置上一次播放
 		audioRef.current.pause();
 		audioRef.current.currentTime = 0;
-
-		// 切换到当前单词的音频
 		audioRef.current.src = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(
 			words[index].korean
-		)}?&type=1&le=ko`;
-
-		// 开始播放
+		)}?&type=0&le=ko`;
 		audioRef.current.play().catch((err) => {
 			console.error("播放音频出错：", err);
 		});
+		setTimeout(() => {
+			inputRef.current?.focus();
+		}, 1000);
 	};
-	useEffect(() => {
-		if (correct !== 0) {
-			setCorrectList((prev) => {
-				const newList = [...prev];
-				newList[index] = correct; // 直接更新对应索引的值
-				return newList;
-			});
-		}
-	}, [correct, index]); // 监听 correct 变化
 
-	useEffect(() => {
-		if (correct !== 0) {
-			// correctList 也已经在上一步 setCorrectList 里更新好了
-			// 但是要保证在 handleNext 或 handlePrev 里，你已经给 correctList[index] 赋值
-			// 且你想在这儿自动同步时，要注意别重复提交
-			updateDictationStatus({
-				id: words[index].id,
-				dictationStatus: correct,
-			}).catch((err) => console.error(err));
+	// ------------------ 通用：切换到下一题 ------------------
+	const proceedToNext = (finalCorrectValue: number) => {
+		// 更新 correctList 的当前index
+		setCorrectList((prev) => {
+			const newList = [...prev];
+			newList[index] = finalCorrectValue;
+			return newList;
+		});
+
+		// 更新数据库（你也可以放到 useEffect 里监听 correct 的变化，但这里可以更显式）
+		updateDictationStatus({
+			id: words[index].id,
+			dictationStatus: finalCorrectValue,
+		}).catch((err) => console.error(err));
+
+		// 重置本题的对错状态为 0（下一题还要用）
+		setCorrect(0);
+
+		// 弹窗关掉
+		setPopWindow(false);
+
+		// 进入下一个题目
+		if (index < words.length - 1) {
+			setIsNavigating(true); // 避免重复点
+			setTimeout(() => {
+				const newIndex = index + 1;
+				setIndex(newIndex);
+				// 将用户输入记录下来（可选）
+				setInputValue(inputWordHistory[newIndex] ?? "");
+				setIsNavigating(false);
+			}, 300); // 给个 300ms 做小过渡，随需求
 		}
-	}, [correct]);
+	};
+
+	// ------------------ 点击下一个按钮 ------------------
+	const handleNext = () => {
+		if (isNavigating) return;
+
+		// 先把当前输入存到历史中
+		setInputWordHistory((prev) => {
+			const newArr = [...prev];
+			newArr[index] = inputValue;
+			return newArr;
+		});
+
+		// 判断对错
+		if (inputValue.trim() === words[index].chinese.trim()) {
+			// 如果用户填的和正确答案一样 => 直接进入下一题（对了）
+			proceedToNext(1);
+		}
+		if (inputValue.trim()==="") {
+			proceedToNext(-1);
+		}
+		if (inputValue.trim() !== words[index].chinese.trim() && inputValue.trim()!=="") {
+			// 如果用户填的答案和正确答案不一样 => 弹窗，交给弹窗按钮来决定真正的对错
+			setPopWindow(true);
+		}
+	};
+
+	// ------------------ 点击上一个按钮 ------------------
+	const handlePrev = () => {
+		if (isNavigating) return;
+		setIsNavigating(true);
+
+		// 把当前输入存到历史中
+		setInputWordHistory((prev) => {
+			const newArr = [...prev];
+			newArr[index] = inputValue;
+			return newArr;
+		});
+
+		// 切换到上一题
+		if (index > 0) {
+			const newIndex = index - 1;
+			setIndex(newIndex);
+			// 从历史记录里拿回用户输入
+			setInputValue(inputWordHistory[newIndex] ?? "");
+		}
+
+		setTimeout(() => {
+			setIsNavigating(false);
+		}, 300);
+	};
+
+	// ------------------ 弹窗按钮的处理 ------------------
+	// “我记错了” => 视为答错
+	const handlePopWrong = () => {
+		proceedToNext(-1);
+	};
+	// “是一个意思” => 视为答对
+	const handlePopSameMeaning = () => {
+		proceedToNext(1);
+	};
+
+	// ------------------ JSX 渲染部分 ------------------
 	return (
 		<div className="h-svh w-svw flex flex-col">
-			{!isStarted ? (
-				// 条件 1：isStarted 为 false
-				<button onClick={handleStart} className="h-svh">
-					开始测试
-				</button>
-			) : loading ? (
-				// 条件 2：loading 为 true
+			{loading ? (
+				// 2. 正在加载
 				<div className="flex flex-col items-center justify-center h-full w-full bg-yellow-50 pt-20 text-right">
 					<Loader2 className="animate-spin w-10 h-10 text-gray-600" />
 					<p className="mt-4 text-gray-600">加载中...</p>
 				</div>
+			) : !isStarted ? (
+				// 1. 还没开始
+				<div
+					className={`h-svh bg-yellow-50 flex justify-center items-center overflow-hidden relative ${
+						isAnimating ? "bg-white" : ""
+					}`}
+				>
+					{/* 扩展的彩色背景 */}
+					{isAnimating && (
+						<motion.div
+							initial={{ scale: 0, opacity: 1 }}
+							animate={{ scale: 50, opacity: 0 }}
+							transition={{ duration: 1, ease: "easeOut" }}
+							className="absolute w-20 h-20 rounded-full bg-[radial-gradient(circle,_#ffffff_0%,_#ffffff_100%)]"
+						/>
+					)}
+					<Button
+						onClick={handleStart}
+						className={`relative z-10 rounded-full w-40 h-40 ${
+							isAnimating ? "invisible" : ""
+						}
+							shadow-xl bg-white text-black font-black text-2xl`}
+					>
+						开始测试
+					</Button>
+				</div>
 			) : (
-				// 条件都不满足时，渲染下面的内容
+				// 3. 测试中
 				<>
 					<div className="w-full bg-yellow-50 pt-20">
 						<div className="pr-8 font-bold lg:text-xl gap-3 flex justify-end">
@@ -357,10 +405,12 @@ const TestPage = () => {
 							</div>
 						</div>
 					</div>
+
 					<div className="h-full w-full flex flex-col items-center justify-center bg-yellow-50">
-						<div className="p-2 pb-10 lg:pb-20 flex flex-col gap-2 items-center justify-center">
+						{/* 单词 & 答案 */}
+						<div className="p-2 pb-5 pt-12 lg:pb-20 flex flex-col gap-2 items-center justify-center">
 							<div
-								className={`text-3xl ${
+								className={`text-4xl ${
 									correctList[index] === 1
 										? "text-green-500"
 										: correctList[index] === -1
@@ -380,11 +430,13 @@ const TestPage = () => {
 								</div>
 							)}
 						</div>
+
+						{/* 输入框 */}
 						<div>
 							<div className="p-2 w-svw flex justify-center items-center">
 								<label htmlFor="" />
 								<input
-									className={`rounded-none w-3/4 lg:w-2/3 text-center border-b-2 border-black bg-inherit focus:outline-none focus:border-b-2 focus:border-black text-3xl ${
+									className={`rounded-none w-1/2 lg:w-2/3 text-center border-b-2 border-black bg-inherit focus:outline-none focus:border-b-2 focus:border-black text-xl ${
 										correctList[index] === 1
 											? "text-green-500"
 											: correctList[index] === -1
@@ -398,6 +450,7 @@ const TestPage = () => {
 									onFocus={() => setIsFocused(true)}
 									onBlur={() => setIsFocused(inputValue !== "")}
 									onChange={(e) => setInputValue(e.target.value)}
+									ref={inputRef}
 									onKeyDown={(e) => {
 										if (e.key === "Enter") {
 											handleNext();
@@ -405,24 +458,21 @@ const TestPage = () => {
 									}}
 								/>
 							</div>
-							<div>
-								<div className="flex items-center justify-center gap-5">
-									<Button
-										onClick={handlePrev}
-										disabled={isNavigating}
-									>
-										上一个
-									</Button>
-									<Button onClick={handlePlay}>播放</Button>
-									<Button
-										onClick={handleNext}
-										disabled={isNavigating}
-									>
-										下一个
-									</Button>
-								</div>
+							{/* 按钮区 */}
+							<div className="flex items-center justify-center gap-5 pt-5">
+								<Button onClick={handlePrev} disabled={isNavigating}>
+									上一个
+								</Button>
+								<Button onClick={handlePlay} disabled={isNavigating}>
+									播放
+								</Button>
+								<Button onClick={handleNext} disabled={isNavigating}>
+									下一个
+								</Button>
 							</div>
 						</div>
+
+						{/* 底部进度 */}
 						<div className="lg:pt-16 pt-10 w-full flex flex-col items-center justify-center gap-2">
 							<Progress
 								value={(index / words.length) * 100}
@@ -433,33 +483,51 @@ const TestPage = () => {
 							</div>
 						</div>
 					</div>
+
+					{/* 弹窗（popWindow） */}
 					{popWindow && (
-						<div
-							className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-							// 这里 z-50 保证弹窗在最上层
-							// bg-black/50 加半透明黑色背景
-						>
-							{/* 弹窗内容容器 */}
-							<div className="bg-white p-6 rounded-xl shadow-inner w-[300px] text-center">
-								<h2 className="text-xl font-bold mb-4">
-									确定一下答案
-								</h2>
-								<p className="mb-4 text-orange-600">你的答案是：{inputValue}</p>
-								<p className="mb-4 text-red-600">
-									正确答案是：{words[index]?.chinese}
-								</p>
-								<div className=" flex justify-center gap-4">
+						<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+							<div className="bg-white p-6 rounded-xl shadow-inner w-[300px] text-center flex flex-col gap-6">
+								<div className="p-6 bg-white shadow-lg rounded-2xl border border-gray-200 flex flex-col gap-3">
+									<h2 className="text-3xl font-extrabold text-gray-800 mb-4">
+										确定一下答案
+									</h2>
+
+
+									<div className="p-4 rounded   shadow-sm font-bold">
+										<p className="text-xl font-semibold text-black">
+											你的答案是：
+											<span className="font-extrabold text-black">
+												{" "}
+												{inputValue}{" "}
+											</span>
+										</p>
+									</div>
+
+									<div className="p-4 rounded  shadow-sm">
+										<p className="text-xl font-semibold text-black">
+											正确答案是：
+											<span className="font-extrabold text-black">
+												{" "}
+												{words[index]?.chinese}{" "}
+											</span>
+										</p>
+									</div>
+								</div>
+								<div className="flex justify-center gap-5">
 									<Button
-										onClick={() => setPopWindow(false)}
-										className=" text-white px-4 py-2 rounded hover:bg-blue-600"
+										onClick={handlePopWrong}
+										className="text-white px-5 py-2  rounded-full text-xl font-bold h-18"
 									>
-										我记错了
+												记错了
+												<Annoyed />
 									</Button>
 									<Button
-										onClick={() => setPopWindow(false)}
-										className=" text-white px-4 py-2 rounded hover:bg-blue-600"
+										onClick={handlePopSameMeaning}
+										className="text-white px-5 py-2  rounded-full text-xl font-bold h-18"
 									>
-										是一个意思
+												一样呀
+												<PartyPopper />
 									</Button>
 								</div>
 							</div>
