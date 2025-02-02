@@ -1,4 +1,15 @@
 "use client";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -82,6 +93,7 @@ const TestPage = () => {
 		[]
 	);
 	const [isStarted, setIsStarted] = useState(false);
+	const [popWindow, setPopWindow] = useState(false);
 	// 定义一个 ref 用于存放全局唯一的 Audio 实例
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const [isNavigating, setIsNavigating] = useState(false);
@@ -202,7 +214,7 @@ const TestPage = () => {
 		loadWords();
 	}, []);
 
-	const handleNext = async () => {
+	const handleNext = () => {
 		if (isNavigating) return;
 		setIsNavigating(true);
 		// 1. 先把当前输入存到历史中
@@ -217,7 +229,9 @@ const TestPage = () => {
 			console.log("correct");
 
 			// 延迟 1 秒后切换到下一个单词
-		} else {
+		}
+		if (inputValue !== words[index].chinese) {
+			setPopWindow(true);
 			console.log("wrong");
 			setCorrect(-1);
 		}
@@ -419,6 +433,38 @@ const TestPage = () => {
 							</div>
 						</div>
 					</div>
+					{popWindow && (
+						<div
+							className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+							// 这里 z-50 保证弹窗在最上层
+							// bg-black/50 加半透明黑色背景
+						>
+							{/* 弹窗内容容器 */}
+							<div className="bg-white p-6 rounded-xl shadow-inner w-[300px] text-center">
+								<h2 className="text-xl font-bold mb-4">
+									确定一下答案
+								</h2>
+								<p className="mb-4 text-orange-600">你的答案是：{inputValue}</p>
+								<p className="mb-4 text-red-600">
+									正确答案是：{words[index]?.chinese}
+								</p>
+								<div className=" flex justify-center gap-4">
+									<Button
+										onClick={() => setPopWindow(false)}
+										className=" text-white px-4 py-2 rounded hover:bg-blue-600"
+									>
+										我记错了
+									</Button>
+									<Button
+										onClick={() => setPopWindow(false)}
+										className=" text-white px-4 py-2 rounded hover:bg-blue-600"
+									>
+										是一个意思
+									</Button>
+								</div>
+							</div>
+						</div>
+					)}
 				</>
 			)}
 		</div>
