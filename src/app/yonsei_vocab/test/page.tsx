@@ -81,23 +81,28 @@ const TestPage = () => {
 	const [inputWordHistory, setInputWordHistory] = useState<string[]>(
 		[]
 	);
+	const [isStarted, setIsStarted] = useState(false);
+	// 定义一个 ref 用于存放全局唯一的 Audio 实例
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const [isNavigating, setIsNavigating] = useState(false);
-
-	// 组件挂载时创建 Audio 实例，卸载时清理
 	useEffect(() => {
+		// 在组件第一次挂载时创建 Audio 实例并保存在 ref 中
 		audioRef.current = new Audio();
 		return () => {
-			if (audioRef.current) {
-				audioRef.current.pause();
-				audioRef.current = null;
-			}
+			// 在组件卸载时，如果还在播放则停止
+			audioRef.current?.pause();
+			audioRef.current = null;
 		};
 	}, []);
+	const handleStart = () => {
+		setIsStarted(true);
+		// 播放第一个单词
+		handlePlay();
+	};
 
 	useEffect(() => {
 		// 如果数组不为空或索引有效，再播放
-		if (words.length > 0 && index >= 0 && index < words.length) {
+		if (words.length > 0 && index < words.length) {
 			handlePlay();
 		}
 	}, [index]);
@@ -306,16 +311,23 @@ const TestPage = () => {
 	}, [correct]);
 	return (
 		<div className="h-svh w-svw flex flex-col">
-			{loading ? (
+			{!isStarted ? (
+				// 条件 1：isStarted 为 false
+				<button onClick={handleStart} className="h-svh">
+					开始测试
+				</button>
+			) : loading ? (
+				// 条件 2：loading 为 true
 				<div className="flex flex-col items-center justify-center h-full w-full bg-yellow-50 pt-20 text-right">
 					<Loader2 className="animate-spin w-10 h-10 text-gray-600" />
 					<p className="mt-4 text-gray-600">加载中...</p>
 				</div>
 			) : (
+				// 条件都不满足时，渲染下面的内容
 				<>
-					<div className="w-full bg-yellow-50 pt-20 ">
-						<div className=" pr-8 font-bold lg:text-xl gap-3 flex justify-end">
-							<div className="">
+					<div className="w-full bg-yellow-50 pt-20">
+						<div className="pr-8 font-bold lg:text-xl gap-3 flex justify-end">
+							<div>
 								<Button
 									variant={"outline"}
 									className="bg-gray-900/10 hover:bg-gray-900/10 text-base p-2 border-none font-bold"
@@ -326,13 +338,13 @@ const TestPage = () => {
 							<div className="flex justify-center items-center">
 								{volumeTitle}
 							</div>
-							<div className=" flex justify-center items-center text-gray-500 font-light">
+							<div className="flex justify-center items-center text-gray-500 font-light">
 								{chapterTitle}
 							</div>
 						</div>
 					</div>
 					<div className="h-full w-full flex flex-col items-center justify-center bg-yellow-50">
-						<div className=" p-2 pb-10 lg:pb-20 flex flex-col gap-2 items-center justify-center">
+						<div className="p-2 pb-10 lg:pb-20 flex flex-col gap-2 items-center justify-center">
 							<div
 								className={`text-3xl ${
 									correctList[index] === 1
@@ -340,7 +352,7 @@ const TestPage = () => {
 										: correctList[index] === -1
 										? "text-red-500"
 										: "text-black"
-								} pb-0  font-bold`}
+								} pb-0 font-bold`}
 							>
 								{words[index]?.korean}
 							</div>
@@ -349,14 +361,14 @@ const TestPage = () => {
 									答案：{words[index]?.chinese}
 								</div>
 							) : (
-								<div className=" invisible flex justify-center items-center text-xl text-red-500">
+								<div className="invisible flex justify-center items-center text-xl text-red-500">
 									----
 								</div>
 							)}
 						</div>
-						<div className="">
-							<div className=" p-2  w-svw flex justify-center items-center">
-								<label htmlFor=""></label>
+						<div>
+							<div className="p-2 w-svw flex justify-center items-center">
+								<label htmlFor="" />
 								<input
 									className={`rounded-none w-3/4 lg:w-2/3 text-center border-b-2 border-black bg-inherit focus:outline-none focus:border-b-2 focus:border-black text-3xl ${
 										correctList[index] === 1
@@ -364,8 +376,7 @@ const TestPage = () => {
 											: correctList[index] === -1
 											? "text-red-500"
 											: "text-black"
-									}
-											`}
+									}`}
 									type="text"
 									title="shit"
 									value={inputValue}
@@ -380,7 +391,7 @@ const TestPage = () => {
 									}}
 								/>
 							</div>
-							<div className="">
+							<div>
 								<div className="flex items-center justify-center gap-5">
 									<Button
 										onClick={handlePrev}
@@ -403,7 +414,7 @@ const TestPage = () => {
 								value={(index / words.length) * 100}
 								className="w-2/3"
 							/>
-							<div className="">
+							<div>
 								{index + 1} / {words.length}
 							</div>
 						</div>
