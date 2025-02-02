@@ -1,11 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 interface Word {
 	id: number;
 	korean: string;
@@ -44,9 +43,28 @@ async function fetchWords(
 		throw error;
 	}
 }
-const testPage = () => {
+
+async function updateDictationStatus(updates: {
+	id: number;
+	dictationStatus: number;
+}) {
+	try {
+		await fetch("/api/tests", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(updates),
+		});
+		return { success: true };
+	} catch (error) {
+		console.error("Failed to update words:", error);
+		throw error;
+	}
+}
+const TestPage = () => {
 	const [index, setIndex] = useState(0);
-    const [isFocused, setIsFocused] = useState(false);
+	const [isFocused, setIsFocused] = useState(false);
 	const [words, setWords] = useState<Word[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [inputValue, setInputValue] = useState("");
@@ -59,7 +77,30 @@ const testPage = () => {
 	const [statusTitle, setStatusTitle] = useState("");
 	const [chapterTitle, setChapterTitle] = useState("");
 	const [volumeTitle, setVolumeTitle] = useState("");
-	const [correctList, setCorrectList] = useState<number[]>([]);
+	const [correctList, setCorrectList] = useState<number[]>([]); // 1: correct, -1: wrong, 0: not answered
+	const [inputWordHistory, setInputWordHistory] = useState<string[]>(
+		[]
+	);
+	const audioRef = useRef<HTMLAudioElement | null>(null);
+	const [isNavigating, setIsNavigating] = useState(false);
+
+	// 组件挂载时创建 Audio 实例，卸载时清理
+	useEffect(() => {
+		audioRef.current = new Audio();
+		return () => {
+			if (audioRef.current) {
+				audioRef.current.pause();
+				audioRef.current = null;
+			}
+		};
+	}, []);
+
+	useEffect(() => {
+		// 如果数组不为空或索引有效，再播放
+		if (words.length > 0 && index >= 0 && index < words.length) {
+			handlePlay();
+		}
+	}, [index]);
 
 	useEffect(() => {
 		async function loadWords() {
@@ -155,37 +196,92 @@ const testPage = () => {
 
 		loadWords();
 	}, []);
-	const handleNext = () => {
+
+	const handleNext = async () => {
+		if (isNavigating) return;
+		setIsNavigating(true);
+		// 1. 先把当前输入存到历史中
+		setInputWordHistory((prev) => {
+			const newArr = [...prev];
+			newArr[index] = inputValue;
+			return newArr;
+		});
+
 		if (inputValue === words[index].chinese) {
 			setCorrect(1);
 			console.log("correct");
 
 			// 延迟 1 秒后切换到下一个单词
-
-			setTimeout(() => {
-				setCorrect(0);
-				if (index < words.length - 1) {
-					setIndex((index) => index + 1);
-				}
-				setInputValue("");
-			}, 1000);
 		} else {
 			console.log("wrong");
 			setCorrect(-1);
-
+		}
+		if (correctList[index] === undefined) {
 			setTimeout(() => {
 				setCorrect(0);
+
+				// 只有当下一题索引合法时才切换
 				if (index < words.length - 1) {
-					setIndex((index) => index + 1);
+					const newIndex = index + 1;
+					setIndex(newIndex);
+					// 2. 从历史记录里拿对应索引的输入给到inputValue
+					setInputValue(inputWordHistory[newIndex] ?? "");
 				}
-				setInputValue("");
+			}, 1000);
+			setTimeout(() => {
+				setIsNavigating(false);
+			}, 1000);
+		} else {
+			setCorrect(0);
+
+			// 只有当下一题索引合法时才切换
+			if (index < words.length - 1) {
+				const newIndex = index + 1;
+				setIndex(newIndex);
+				// 2. 从历史记录里拿对应索引的输入给到inputValue
+				setInputValue(inputWordHistory[newIndex] ?? "");
+			}
+			setTimeout(() => {
+				setIsNavigating(false);
 			}, 1000);
 		}
 	};
+
 	const handlePrev = () => {
+		if (isNavigating) return;
+		setIsNavigating(true);
+		setInputWordHistory((prev) => {
+			const newArr = [...prev];
+			newArr[index] = inputValue;
+			return newArr;
+		});
 		if (index > 0) {
-			setIndex((index) => index - 1);
+			const newIndex = index - 1;
+			setIndex(newIndex);
+			// 2. 从历史记录里拿对应索引的输入给到inputValue
+			setInputValue(inputWordHistory[newIndex] ?? "");
 		}
+		setTimeout(() => {
+			setIsNavigating(false);
+		}, 1000);
+	};
+
+	const handlePlay = () => {
+		if (!audioRef.current || !words[index]) return;
+
+		// 每次播放前，先停止、重置上一次播放
+		audioRef.current.pause();
+		audioRef.current.currentTime = 0;
+
+		// 切换到当前单词的音频
+		audioRef.current.src = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(
+			words[index].korean
+		)}?&type=1&le=ko`;
+
+		// 开始播放
+		audioRef.current.play().catch((err) => {
+			console.error("播放音频出错：", err);
+		});
 	};
 	useEffect(() => {
 		if (correct !== 0) {
@@ -196,6 +292,18 @@ const testPage = () => {
 			});
 		}
 	}, [correct, index]); // 监听 correct 变化
+
+	useEffect(() => {
+		if (correct !== 0) {
+			// correctList 也已经在上一步 setCorrectList 里更新好了
+			// 但是要保证在 handleNext 或 handlePrev 里，你已经给 correctList[index] 赋值
+			// 且你想在这儿自动同步时，要注意别重复提交
+			updateDictationStatus({
+				id: words[index].id,
+				dictationStatus: correct,
+			}).catch((err) => console.error(err));
+		}
+	}, [correct]);
 	return (
 		<div className="h-svh w-svw flex flex-col">
 			{loading ? (
@@ -224,7 +332,7 @@ const testPage = () => {
 						</div>
 					</div>
 					<div className="h-full w-full flex flex-col items-center justify-center bg-yellow-50">
-						<div className=" p-2 pb-10 lg:pb-20 flex flex-col gap-2">
+						<div className=" p-2 pb-10 lg:pb-20 flex flex-col gap-2 items-center justify-center">
 							<div
 								className={`text-3xl ${
 									correctList[index] === 1
@@ -238,7 +346,7 @@ const testPage = () => {
 							</div>
 							{correctList[index] === -1 ? (
 								<div className="flex justify-center items-center text-xl text-red-500">
-									{words[index]?.chinese}
+									答案：{words[index]?.chinese}
 								</div>
 							) : (
 								<div className=" invisible flex justify-center items-center text-xl text-red-500">
@@ -256,7 +364,8 @@ const testPage = () => {
 											: correctList[index] === -1
 											? "text-red-500"
 											: "text-black"
-									}`}
+									}
+											`}
 									type="text"
 									title="shit"
 									value={inputValue}
@@ -273,9 +382,19 @@ const testPage = () => {
 							</div>
 							<div className="">
 								<div className="flex items-center justify-center gap-5">
-									<Button onClick={handlePrev}>上一个</Button>
-									<Button>播放</Button>
-									<Button onClick={handleNext}>下一个</Button>
+									<Button
+										onClick={handlePrev}
+										disabled={isNavigating}
+									>
+										上一个
+									</Button>
+									<Button onClick={handlePlay}>播放</Button>
+									<Button
+										onClick={handleNext}
+										disabled={isNavigating}
+									>
+										下一个
+									</Button>
 								</div>
 							</div>
 						</div>
@@ -295,4 +414,4 @@ const testPage = () => {
 	);
 };
 
-export default testPage;
+export default TestPage;

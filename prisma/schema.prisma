@@ -25,6 +25,7 @@ model WordYonsei {
   bookSeries String // 添加的字段：书籍系列
   status     Int     @default(0) // 0: 未学习，1: 已学习
   chapter    Int     @default(0) // 添加的字段：章节
+  dictationStatus Int @default(0) // 0: 未听写，1: 正确，2: 错误
 
   createdAt DateTime @default(now()) // 自动创建时间
 }

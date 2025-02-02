@@ -69,3 +69,21 @@ export async function updateWordsStatus(
 		return { success: false, error };
 	}
 }
+
+export async function updateDictationStatus(
+	id: number,
+	dictationStatus: number
+
+) {
+	try {
+		await prisma.wordYonsei.update({
+			where: { id },
+			data: { dictationStatus: dictationStatus },
+		});
+
+		return { success: true };
+	} catch (error) {
+		console.error("❌ 更新失败:", error);
+		return { success: false, error };
+	}
+}
