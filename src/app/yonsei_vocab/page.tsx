@@ -38,12 +38,16 @@ const YonseiVocab = () => {
 	};
 
 	// 构造并跳转到对应链接
-	const redirectToStudy = (type: "study" | "vocabulary_list") => {
+	const redirectToStudy = (type: string) => {
 		// 基础地址
-		const baseUrl =
-			type === "study"
-				? "/yonsei_vocab/study"
-				: "/yonsei_vocab/vocabulary_list";
+		let baseUrl = "/yonsei_vocab/study";
+		if (type === "study") {
+			baseUrl = "/yonsei_vocab/study";
+		} else if (type === "vocabulary_list") {
+			baseUrl = "/yonsei_vocab/vocabulary_list";
+		} else if (type === "test") {
+			baseUrl = "/yonsei_vocab/test";
+		}
 
 		// 构造查询参数
 		// http://localhost:3000/yonsei_vocab/study?volume=1&chapter=1&bookSeries=%E5%BB%B6%E4%B8%96%E9%9F%A9%E5%9B%BD%E8%AF%AD
@@ -375,6 +379,14 @@ const YonseiVocab = () => {
 							onClick={() => redirectToStudy("vocabulary_list")}
 						>
 							查看单词列表
+						</Button>
+					</div>
+					<div className="flex justify-center">
+						<Button
+							className="w-full rounded-full bg-yellow-500 text-white hover:bg-yellow-500 shadow-md font-bold"
+							onClick={() => redirectToStudy("test")}
+						>
+							测试
 						</Button>
 					</div>
 				</div>

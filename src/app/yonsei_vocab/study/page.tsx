@@ -223,8 +223,12 @@ export default function StudyPage() {
 		index: number,
 		state: "认识" | "不认识" | "模糊"
 	) => {
-		// 1) 立即切换到下一张，优先保障 UI 交互的流畅度
-		instanceRef.current?.next();
+    // 1) 立即切换到下一张，优先保障 UI 交互的流畅度
+    // 加个时间延迟，让用户感觉到切换
+    setTimeout(() => {
+      instanceRef.current?.next();
+    }, 500);
+
 
 		// 2) 把更新逻辑放到低优先级中
 		startTransition(() => {
@@ -349,7 +353,7 @@ export default function StudyPage() {
 														<div className="flex justify-center items-center font-bold text-3xl">
 															{word.korean}
 														</div>
-														<div className="text-2xl bg-gray-200 px-2 py-1 rounded-sm flex justify-center items-center md:bg-opacity-65 bg-opacity-50 lg:bg-opacity-65">
+														<div className="text-base bg-gray-200 px-2 py-1 rounded-sm flex justify-center items-center md:bg-opacity-65 bg-opacity-50 lg:bg-opacity-65">
 															{word.type}
 														</div>
 														<div className="flex justify-center items-center font-light text-gray-700 text-3xl">

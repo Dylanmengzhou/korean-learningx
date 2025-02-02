@@ -14,7 +14,7 @@ export async function getAllWord(
 	status: number = -1 // 默认值设为 -1
 ) {
 	try {
-		const words = await prisma.word.findMany({
+		const words = await prisma.wordYonsei.findMany({
 			where: {
 				volume: volume ?? undefined,
 				bookSeries: bookSeries ?? undefined,
@@ -56,7 +56,7 @@ export async function updateWordsStatus(
 		// 使用事务，一次性执行多条 update
 		await prisma.$transaction(
 			updates.map((item) =>
-				prisma.word.update({
+				prisma.wordYonsei.update({
 					where: { id: item.id },
 					data: { status: item.status },
 				})

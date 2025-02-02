@@ -12,7 +12,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Word {
+model WordYonsei {
   id         Int     @id @default(autoincrement())
   korean     String
   type       String

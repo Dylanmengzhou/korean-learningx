@@ -1,3 +1,4 @@
+// import { WordYonsei } from "./../node_modules/.prisma/client/index.d";
 const XLSX = require("xlsx");
 const fs = require("fs");
 const { PrismaClient } = require("@prisma/client");
@@ -5,8 +6,8 @@ const prisma = new PrismaClient();
 
 // 🔹 定义数据结构类型
 interface WordRow {
-	chapter: any;
-	status: null;
+	chapter: number;
+	status: number;
 	korean: string;
 	type: string;
 	phrase?: string;
@@ -18,10 +19,12 @@ interface WordRow {
 	bookSeries: string; // 🔹 书籍系列
 }
 
-const volume = 1;
-const chapter = 10;
 // 🔹 明确 filePath 类型
-async function importWordsFromExcel(filePath: string): Promise<void> {
+async function importWordsFromExcel(
+	filePath: string,
+	volume: number,
+	chapter: number
+): Promise<void> {
 	const fileBuffer = fs.readFileSync(filePath);
 	const workbook = XLSX.read(fileBuffer, { type: "buffer" });
 
@@ -31,7 +34,9 @@ async function importWordsFromExcel(filePath: string): Promise<void> {
 	// 🔹 明确类型：data 是 WordRow 数组
 	const data: WordRow[] = XLSX.utils.sheet_to_json(sheet);
 
+	console.log(`正在读取第${volume}册第${chapter}章节的数据...`);
 	console.log(`📥 读取到 ${data.length} 条数据，正在导入数据库...`);
+	console.log("----------------分割线------------------");
 
 	// 🔹 使用 map 确保数据符合类型
 	const insertData = data.map((row: WordRow) => ({
@@ -48,14 +53,22 @@ async function importWordsFromExcel(filePath: string): Promise<void> {
 		chapter: chapter, // ✅ 添加章节
 	}));
 
-	await prisma.word.createMany({ data: insertData });
+	await prisma.WordYonsei.createMany({ data: insertData });
 
 	console.log("✅ 数据导入成功！");
 	await prisma.$disconnect();
 }
 
 // 🔹 明确 filePath 变量的类型
-const filePath: string = `./scripts/data/延世韩国语第${volume}册第${chapter}单元.xlsx`;
 
 // 运行导入函数
-importWordsFromExcel(filePath).catch(console.error);
+for (let i = 1; i < 7; i++) {
+	// 这是单元循环
+	for (let j = 1; j < 11; j++) {
+		importWordsFromExcel(
+			`./scripts/data/第${i}册/延世韩国语第${i}册第${j}单元.xlsx`,
+			i,
+			j
+		).catch(console.error);
+	}
+}
