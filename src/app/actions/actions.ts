@@ -8,37 +8,56 @@ import prisma from "@/lib/prisma";
  * 如果不传，默认查询所有
  */
 export async function getAllWord(
+	userId: number,
 	volume?: number,
 	bookSeries?: string,
 	chapter: number = 0, // 默认值设为 0
 	status: number = -1 // 默认值设为 -1
 ) {
+
+	const whereCondition: any = {
+		...(volume ? { volume: Number(volume) } : {}),
+		...(bookSeries ? { bookSeries } : {}),
+		...(chapter > 0 ? { chapter: Number(chapter) } : {}), // 只过滤 chapter > 0
+	};
+
+
 	try {
 		const words = await prisma.wordYonsei.findMany({
-			where: {
-				volume: volume ?? undefined,
-				bookSeries: bookSeries ?? undefined,
-				...(chapter !== 0 ? { chapter } : {}), // 只有 chapter 不是 0 时，才添加 chapter 筛选
-				...(status !== -1 ? { status } : {}), // 只有 status 不是 -1 时，才添加 status 筛选
-			},
-			orderBy: { id: "asc" },
-			select: {
-				id: true,
-				korean: true,
-				type: true,
-				phrase: true,
-				phraseCn: true,
-				example: true,
-				exampleCn: true,
-				chinese: true,
-				volume: true,
-				bookSeries: true,
-				chapter: true,
-				status: true,
+			where: whereCondition,
+			include: {
+				userWordProgresses: {
+					where: { userId: Number(userId) },
+					select: { status: true, dictationStatus: true },
+				},
 			},
 		});
+		// 格式化返回数据
+		const formattedWords = words
+			.map((word) => {
+				const userProgress = word.userWordProgresses[0] || null;
+				return {
+					id: word.id,
+					korean: word.korean,
+					type: word.type,
+					phrase: word.phrase,
+					phraseCn: word.phraseCn,
+					example: word.example,
+					exampleCn: word.exampleCn,
+					chinese: word.chinese,
+					volume: word.volume,
+					bookSeries: word.bookSeries,
+					chapter: word.chapter,
+					createdAt: word.createdAt,
+					status: userProgress?.status ?? 0,
+					dictationStatus: userProgress?.dictationStatus ?? 0,
+				};
+			})
+			.filter((word) =>
+				status >= 0 ? word.status === status : true
+			); // 过滤 status
 
-		return words;
+		return formattedWords;
 	} catch (error) {
 		console.error("❌ 查询失败:", error);
 		return [];
@@ -50,15 +69,26 @@ export async function getAllWord(
  * 接收一个数组，每项包含 { id, status }
  */
 export async function updateWordsStatus(
-	updates: { id: number; status: number }[]
+	updates: { id: number; status: number; userId: string }[]
 ) {
+	console.log(updates[0].userId);
 	try {
 		// 使用事务，一次性执行多条 update
 		await prisma.$transaction(
 			updates.map((item) =>
-				prisma.wordYonsei.update({
-					where: { id: item.id },
-					data: { status: item.status },
+				prisma.userWordProgress.upsert({
+					where: {
+						userId_wordId: {
+							userId: Number(item.userId), // 确保是 Number
+							wordId: Number(item.id), // 确保是 Number
+						},
+					},
+					update: { status: Number(item.status) },
+					create: {
+						userId: Number(item.userId), // 确保是 Number
+						wordId: Number(item.id), // 确保是 Number
+						status: Number(item.status),
+					},
 				})
 			)
 		);
@@ -71,14 +101,24 @@ export async function updateWordsStatus(
 }
 
 export async function updateDictationStatus(
+	userid: number,
 	id: number,
 	dictationStatus: number
-
 ) {
 	try {
-		await prisma.wordYonsei.update({
-			where: { id },
-			data: { dictationStatus: dictationStatus },
+		await prisma.userWordProgress.upsert({
+			where: {
+				userId_wordId: {
+					userId: Number(userid), // 确保是 Number
+					wordId: Number(id), // 确保是 Number
+				},
+			},
+			update: { dictationStatus: Number(dictationStatus) },
+			create: {
+				userId: Number(userid), // 确保是 Number
+				wordId: Number(id), // 确保是 Number
+				dictationStatus: Number(dictationStatus),
+			},
 		});
 
 		return { success: true };

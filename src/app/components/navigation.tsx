@@ -1,15 +1,53 @@
 "use client";
-
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+
+import {
+	Avatar,
+	AvatarFallback,
+	AvatarImage,
+} from "@/components/ui/avatar";
+import LogoutButton from "./logout";
+
 export default function Navigation() {
+	const session = useSession();
 	const router = useRouter();
 	const [isScrolled, setIsScrolled] = useState(false);
 	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
 	const [hydrated, setHydrated] = useState(false); // 确保 SSR 加载时不影响 UI
+	const [avatarUrl, setAvatarUrl] = useState("");
+	const [email, setEmail] = useState("");
+	const [name, setName] = useState("");
+	useEffect(() => {
+		if (session.data && session.data.user) {
+			setAvatarUrl(session.data.user.image || "");
+			setEmail(session.data.user.email || "");
+			setName(session.data.user.name || "");
+		}
+	}, [session.data]);
 
 	useEffect(() => {
 		setHydrated(true); // 标记客户端已加载
@@ -80,14 +118,76 @@ export default function Navigation() {
 						))}
 
 					{!isMobile && hydrated && (
-						<div className="flex gap-4">
-							<Button
-								variant="outline"
-								className="text-black border-none"
-							>
-								登录
-							</Button>
-							<Button>注册</Button>
+						<div className="flex gap-4 items-center">
+							{session.data === null ? (
+								<>
+									<Button
+										variant="outline"
+										className="text-black border-none"
+										onClick={() => handleLinkClick("/login")}
+									>
+										登录
+									</Button>
+									<Button
+										onClick={() => handleLinkClick("/register")}
+									>
+										注册
+									</Button>
+								</>
+							) : (
+								<div className="relative mr-20 flex justify-center items-center">
+									<Dialog>
+										<DialogTrigger>
+											<Avatar>
+												<AvatarImage src={avatarUrl} />
+												<AvatarFallback>CN</AvatarFallback>
+											</Avatar>
+										</DialogTrigger>
+										<DialogContent className="sm:max-w-[425px]">
+											<DialogHeader>
+												<DialogTitle className="flex flex-col items-center justify-center gap-3">
+													<Avatar className="w-16 h-16">
+														<AvatarImage src={avatarUrl} />
+														<AvatarFallback>CN</AvatarFallback>
+													</Avatar>
+													<LogoutButton />
+												</DialogTitle>
+											</DialogHeader>
+											<div className="grid gap-4 py-4">
+												<div className="grid grid-cols-4 items-center gap-4">
+													<Label
+														htmlFor="name"
+														className="text-right"
+													>
+														昵称
+													</Label>
+													<Input
+														id="name"
+														value={name}
+														className="col-span-3"
+													/>
+												</div>
+												<div className="grid grid-cols-4 items-center gap-4">
+													<Label
+														htmlFor="username"
+														className="text-right"
+													>
+														Email
+													</Label>
+													<Input
+														id="username"
+														value={email}
+														className="col-span-3"
+													/>
+												</div>
+											</div>
+											<DialogFooter className="flex flex-row">
+												<Button type="submit">Save changes</Button>
+											</DialogFooter>
+										</DialogContent>
+									</Dialog>
+								</div>
+							)}
 						</div>
 					)}
 				</div>
@@ -109,7 +209,7 @@ export default function Navigation() {
 						<X size={24} />
 					</button>
 				</div>
-				<nav className="flex flex-col p-5 space-y-4">
+				<nav className="flex flex-col p-5 gap-5">
 					{menuItems.map((item) => (
 						<button
 							key={item.name}
@@ -118,14 +218,36 @@ export default function Navigation() {
 							{item.name}
 						</button>
 					))}
-					<div className="mt-4">
-						<Button variant="outline" className="w-full">
-							登录
-						</Button>
-					</div>
-					<div>
-						<Button className="w-full">注册</Button>
-					</div>
+					{session.data === null ? (
+						<>
+							<div className="mt-4">
+								<Button
+									variant="outline"
+									className="w-full"
+									onClick={() => handleLinkClick("/login")}
+								>
+									登录
+								</Button>
+							</div>
+							<div>
+								<Button
+									className="w-full"
+									onClick={() => handleLinkClick("/register")}
+								>
+									注册
+								</Button>
+							</div>
+						</>
+					) : (
+						<div className=" flex flex-col items-center justify-center gap-5">
+							<Avatar>
+								<AvatarImage src={avatarUrl} />
+								<AvatarFallback>CN</AvatarFallback>
+							</Avatar>
+
+							<LogoutButton />
+						</div>
+					)}
 				</nav>
 			</div>
 

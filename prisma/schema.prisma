@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// prisma/schema.prisma
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,8 +9,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/**
+ * 用户表 (与 NextAuth 兼容)
+ */
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String?   @unique
+  password      String?
+  name          String?
+  image         String    @default("https://robohash.org/c143b89fb9077cdd6fd77269a7bfefb5?set=set4&bgset=&size=400x400")
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  // NextAuth 关联
+  accounts      Account[]
+  sessions      Session[]
+
+  // 用户与单词进度的一对多
+  userWordProgresses UserWordProgress[]
+}
+
+/**
+ * 公共单词表 (不含用户私有字段)
+ */
 model WordYonsei {
-  id         Int     @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   korean     String
   type       String
   phrase     String?
@@ -21,11 +40,78 @@ model WordYonsei {
   example    String?
   exampleCn  String?
   chinese    String
-  volume     Int // 添加的字段：书的卷数
-  bookSeries String // 添加的字段：书籍系列
-  status     Int     @default(0) // 0: 未学习，1: 已学习
-  chapter    Int     @default(0) // 添加的字段：章节
-  dictationStatus Int @default(0) // 0: 未听写，1: 正确，2: 错误
+  volume     Int
+  bookSeries String
+  createdAt  DateTime @default(now())
 
-  createdAt DateTime @default(now()) // 自动创建时间
+  // 如果章节是公共概念，也可以放这儿
+  chapter Int? // 允许为空或按需加默认值
+
+  // 对应用户进度的反向关联
+  userWordProgresses UserWordProgress[]
+}
+
+/**
+ * 用户单词进度表
+ * - 记录用户(userId) 对某条公共单词(wordId) 的专属状态
+ * - 通过 userId, wordId 组成唯一性，防止重复记录
+ */
+model UserWordProgress {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  wordId          Int
+  status          Int      @default(0) // 0: 未学习, 1: 认识, 2: 不认识, 3: 模糊
+  dictationStatus Int      @default(0) // 0: 未听写, 1: 正确, -1: 错误
+  createdAt       DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id])
+  word WordYonsei @relation(fields: [wordId], references: [id])
+
+  @@unique([userId, wordId])
+}
+
+/**
+ * NextAuth / Auth.js 所需的 Account 表
+ */
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+/**
+ * NextAuth / Auth.js 所需的 Session 表
+ */
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/**
+ * NextAuth / Auth.js 所需的验证 Token 表
+ */
+model VerificationToken {
+  id         Int      @id @default(autoincrement())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }

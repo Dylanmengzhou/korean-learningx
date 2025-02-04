@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-
+import { useSearchParams,useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -12,7 +11,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { ThumbsUp, Loader2 } from "lucide-react";
-
+import { useSession } from "next-auth/react";
 interface Word {
 	id: number;
 	korean: string;
@@ -32,6 +31,7 @@ async function fetchWords(
 	volume?: number,
 	bookSeries?: string,
 	chapter: number = 0,
+	userid?: number,
 	status: number = -1
 ) {
 	try {
@@ -39,6 +39,7 @@ async function fetchWords(
 			...(volume ? { volume: String(volume) } : {}),
 			...(bookSeries ? { bookSeries } : {}),
 			...(chapter ? { chapter: String(chapter) } : {}),
+			...(userid ? { userid: String(userid) } : {}),
 			...(status !== null && status !== undefined
 				? { status: String(status) }
 				: {}),
@@ -62,7 +63,7 @@ async function fetchWords(
  * 调用 /api/words 接口批量更新单词状态
  */
 async function batchUpdateWordsStatus(
-	updates: { id: number; status: number }[]
+	updates: { id: number; status: number; userId: number }[]
 ) {
 	try {
 		const res = await fetch("/api/words", {
@@ -97,6 +98,9 @@ export default function VocabularyList() {
 	const bookSeries = searchParams.get("bookSeries");
 	const chapter = searchParams.get("chapter");
 	const status = searchParams.get("status");
+	const userid = searchParams.get("userid");
+	const { data: session } = useSession();
+	const router = useRouter();
 
 	/**
 	 * 保存当前选中状态（用于界面显示：认识 / 不认识 / 模糊）
@@ -132,6 +136,7 @@ export default function VocabularyList() {
 					Number(volume),
 					bookSeries?.toString() || "",
 					Number(chapter),
+					Number(userid),
 					Number(status)
 				);
 				setWords(data);
@@ -160,7 +165,7 @@ export default function VocabularyList() {
 	 * 把“待更新数组”里的数据一次性发到服务器
 	 */
 	async function handleBatchUpdate(
-		updates: { id: number; status: number }[]
+		updates: { id: number; status: number; userId: number }[]
 	) {
 		if (!updates.length) return;
 		const res = await batchUpdateWordsStatus(updates);
@@ -191,32 +196,44 @@ export default function VocabularyList() {
 		const currentWord = words[index];
 		if (!currentWord) return;
 
-		setUpdateBuffer((prev) => {
-			const newBuffer = [
-				...prev,
-				{ id: currentWord.id, status: statusValue },
-			];
-			// 这里设定每累计 5 条就提交一次 (你可以改成 1 条、10 条等)
-			if (newBuffer.length >= 1) {
-				handleBatchUpdate(newBuffer);
-				return [];
-			}
-			return newBuffer;
-		});
+		// setUpdateBuffer((prev) => {
+		// 	const newBuffer = [
+		// 		...prev,
+		// 		{ id: currentWord.id, status: statusValue },
+		// 	];
+		// 	// 这里设定每累计 5 条就提交一次 (你可以改成 1 条、10 条等)
+		// 	if (newBuffer.length >= 1) {
+		// 		handleBatchUpdate(newBuffer);
+		// 		return [];
+		// 	}
+		// 	return newBuffer;
+		// });
+		const update = [
+			{
+				id: currentWord.id,
+				status: statusValue,
+				userId: session ? Number(session.user.id) : 0,
+			},
+		];
+		try {
+			const res = handleBatchUpdate(update);
+		} catch (error) {
+			console.error("不知道哪里错了", error);
+		}
 	};
 
 	/**
 	 * 组件卸载/页面切换时，如果还有没提交的数据，就最后一次性提交
 	 */
-	useEffect(() => {
-		return () => {
-			if (updateBuffer.length > 0) {
-				// 注意：useEffect 的清理函数不能是 async
-				handleBatchUpdate(updateBuffer);
-			}
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	// useEffect(() => {
+	// 	return () => {
+	// 		if (updateBuffer.length > 0) {
+	// 			// 注意：useEffect 的清理函数不能是 async
+	// 			handleBatchUpdate(updateBuffer);
+	// 		}
+	// 	};
+	// 	// eslint-disable-next-line react-hooks/exhaustive-deps
+	// }, []);
 
 	// --------------------------------
 	// JSX 渲染逻辑
@@ -243,84 +260,94 @@ export default function VocabularyList() {
 
 	return (
 		<div>
-			{/* 列表布局 */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-20 lg:pt-40 items-center justify-items-center text-black w-full h-full bg-gray-100 px-3 mx-auto">
-				{words.map((word, index) => {
-					const currentState = selectedStates[index] || null;
-					return (
-						<Card
-							key={word.id}
-							// 保留你的原有样式 + 根据状态染色
-							className={`
+			{session === null ? (
+				<div className="h-svh flex items-center justify-center flex-col gap-5">
+					<p>请先登录</p>
+					<Button onClick={() => router.push("/login")}>登录</Button>
+				</div>
+			) : (
+				<>
+					<div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-20 lg:pt-40 items-center justify-items-center text-black w-full h-full bg-gray-100 px-3 mx-auto">
+						{words.map((word, index) => {
+							const currentState = selectedStates[index] || null;
+							return (
+								<Card
+									key={word.id}
+									// 保留你的原有样式 + 根据状态染色
+									className={`
                 w-full max-w-7xl backdrop-blur-3xl
                 ${
 									currentState ? cardColors[currentState] : "bg-white"
 								}
               `}
-						>
-							<CardHeader className="flex">
-								<CardTitle className="flex flex-row gap-5">
-									<div className=" font-bold text-xl">
-										{word.korean}
-									</div>
-									<div className=" bg-gray-200 flex justify-center items-center px-2 py-1 rounded-sm">
-										{word.type}
-									</div>
-									<div className=" font-light text-xl">
-										{word.chinese}
-									</div>
-								</CardTitle>
-							</CardHeader>
-
-							<CardContent className="flex flex-col gap-2">
-								<div>
-									<div className="font-bold text-lg">
-										搭配：{word.phrase}
-									</div>
-									<div className="font-light text-base">
-										{word.phraseCn}
-									</div>
-								</div>
-								<div>
-									<div className="font-bold text-lg">
-										例句：{word.example}
-									</div>
-									<div className="font-light text-base">
-										{word.exampleCn}
-									</div>
-								</div>
-							</CardContent>
-
-							<CardFooter className="flex justify-center gap-2">
-								<Button
-									onClick={() => handleSelectState(index, "认识")}
 								>
-									认识
-								</Button>
-								<Button
-									onClick={() => handleSelectState(index, "不认识")}
-								>
-									不认识
-								</Button>
-								<Button
-									onClick={() => handleSelectState(index, "模糊")}
-								>
-									模糊
-								</Button>
-							</CardFooter>
-						</Card>
-					);
-				})}
-			</div>
+									<CardHeader className="flex">
+										<CardTitle className="flex flex-row gap-5">
+											<div className=" font-bold text-xl">
+												{word.korean}
+											</div>
+											<div className=" bg-gray-200 flex justify-center items-center px-2 py-1 rounded-sm">
+												{word.type}
+											</div>
+											<div className=" font-light text-xl">
+												{word.chinese}
+											</div>
+										</CardTitle>
+									</CardHeader>
 
-			{/* 底部“这就是全部了”提示 */}
-			<div className="my-5 grid grid-cols-1 justify-items-center items-center gap-2 backdrop-blur-3xl">
-				<div>
-					<ThumbsUp />
-				</div>
-				<div>这就是全部了</div>
-				<hr className=" w-1/6 h-1 bg-gray-700 rounded-full" />
-			</div>
+									<CardContent className="flex flex-col gap-2">
+										<div>
+											<div className="font-bold text-lg">
+												搭配：{word.phrase}
+											</div>
+											<div className="font-light text-base">
+												{word.phraseCn}
+											</div>
+										</div>
+										<div>
+											<div className="font-bold text-lg">
+												例句：{word.example}
+											</div>
+											<div className="font-light text-base">
+												{word.exampleCn}
+											</div>
+										</div>
+									</CardContent>
+
+									<CardFooter className="flex justify-center gap-2">
+										<Button
+											onClick={() => handleSelectState(index, "认识")}
+										>
+											认识
+										</Button>
+										<Button
+											onClick={() =>
+												handleSelectState(index, "不认识")
+											}
+										>
+											不认识
+										</Button>
+										<Button
+											onClick={() => handleSelectState(index, "模糊")}
+										>
+											模糊
+										</Button>
+									</CardFooter>
+								</Card>
+							);
+						})}
+					</div>
+
+					{/* 底部“这就是全部了”提示 */}
+					<div className="my-5 grid grid-cols-1 justify-items-center items-center gap-2 backdrop-blur-3xl">
+						<div>
+							<ThumbsUp />
+						</div>
+						<div>这就是全部了</div>
+						<hr className=" w-1/6 h-1 bg-gray-700 rounded-full" />
+					</div>
+				</>
+			)}
 		</div>
 	);
 }

@@ -1,10 +1,11 @@
-"use client";
-
 import localFont from "next/font/local";
 import "./globals.css";
 import Navigation from "./components/navigation";
 import { Toaster } from "@/components/ui/toaster"
- 
+import { SessionProvider } from "next-auth/react";
+
+
+
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -20,9 +21,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <SessionProvider>
         <Navigation />
         <main>{children}</main>
-        <Toaster />
+          <Toaster />
+        </SessionProvider>
       </body>
     </html>
   );

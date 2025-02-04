@@ -49,9 +49,9 @@ async function importWordsFromExcel(
 		chinese: row.chinese,
 		volume: volume, // ✅ 添加卷数
 		bookSeries: "延世韩国语", // ✅ 添加书籍系列
-		status: 0, // ✅ 添加状态
+		// status: 0, // ✅ 添加状态
 		chapter: chapter, // ✅ 添加章节
-		dictationStatus: 0, // ✅ 添加听写状态
+		// dictationStatus: 0, // ✅ 添加听写状态
 	}));
 
 	await prisma.WordYonsei.createMany({ data: insertData });

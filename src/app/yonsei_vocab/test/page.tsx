@@ -1,13 +1,14 @@
 "use client";
-import { PartyPopper } from 'lucide-react';
-import { Annoyed } from 'lucide-react';
+import { PartyPopper } from "lucide-react";
+import { Annoyed } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 
 interface Word {
 	id: number;
@@ -26,13 +27,15 @@ async function fetchWords(
 	volume?: number,
 	bookSeries?: string,
 	chapter: number = 0,
-	status: number = -1
+	status: number = -1,
+	userid?: number
 ) {
 	try {
 		const query = new URLSearchParams({
 			...(volume ? { volume: String(volume) } : {}),
 			...(bookSeries ? { bookSeries } : {}),
 			...(chapter ? { chapter: String(chapter) } : {}),
+			...(userid ? { userid: String(userid) } : {}),
 			...(status !== null && status !== undefined
 				? { status: String(status) }
 				: {}),
@@ -52,6 +55,7 @@ async function fetchWords(
 
 async function updateDictationStatus(updates: {
 	id: number;
+	userid: number;
 	dictationStatus: number;
 }) {
 	try {
@@ -79,12 +83,15 @@ const TestPage = () => {
 	const [inputValue, setInputValue] = useState("");
 	const [correct, setCorrect] = useState(0); // 当前题的对错状态：1正确 -1错误 0尚未判断
 	const inputRef = useRef<HTMLInputElement>(null);
+	const { data: session } = useSession();
+	const router = useRouter();
 
 	const searchParams = useSearchParams();
 	const volume = searchParams.get("volume");
 	const bookSeries = searchParams.get("bookSeries");
 	const chapter = searchParams.get("chapter");
 	const status = searchParams.get("status");
+	const userid = searchParams.get("userid");
 
 	const [statusTitle, setStatusTitle] = useState("");
 	const [chapterTitle, setChapterTitle] = useState("");
@@ -141,7 +148,8 @@ const TestPage = () => {
 					Number(volume),
 					bookSeries?.toString() || "",
 					Number(chapter),
-					Number(status)
+					Number(status),
+					Number(userid)
 				);
 				setWords(data);
 
@@ -266,6 +274,7 @@ const TestPage = () => {
 
 		// 更新数据库（你也可以放到 useEffect 里监听 correct 的变化，但这里可以更显式）
 		updateDictationStatus({
+			userid: Number(session?.user?.id) ?? 1,
 			id: words[index].id,
 			dictationStatus: finalCorrectValue,
 		}).catch((err) => console.error(err));
@@ -305,10 +314,13 @@ const TestPage = () => {
 			// 如果用户填的和正确答案一样 => 直接进入下一题（对了）
 			proceedToNext(1);
 		}
-		if (inputValue.trim()==="") {
+		if (inputValue.trim() === "") {
 			proceedToNext(-1);
 		}
-		if (inputValue.trim() !== words[index].chinese.trim() && inputValue.trim()!=="") {
+		if (
+			inputValue.trim() !== words[index].chinese.trim() &&
+			inputValue.trim() !== ""
+		) {
 			// 如果用户填的答案和正确答案不一样 => 弹窗，交给弹窗按钮来决定真正的对错
 			setPopWindow(true);
 		}
@@ -352,7 +364,12 @@ const TestPage = () => {
 	// ------------------ JSX 渲染部分 ------------------
 	return (
 		<div className="h-svh w-svw flex flex-col">
-			{loading ? (
+			{session === null ? (
+				<div className="h-svh flex items-center justify-center flex-col gap-5">
+					<p>请先登录</p>
+					<Button onClick={() => router.push("/login")}>登录</Button>
+				</div>
+			) : loading ? (
 				// 2. 正在加载
 				<div className="flex flex-col items-center justify-center h-full w-full bg-yellow-50 pt-20 text-right">
 					<Loader2 className="animate-spin w-10 h-10 text-gray-600" />
@@ -475,7 +492,7 @@ const TestPage = () => {
 						{/* 底部进度 */}
 						<div className="lg:pt-16 pt-10 w-full flex flex-col items-center justify-center gap-2">
 							<Progress
-								value={(index / words.length) * 100}
+								value={((index + 1) / words.length) * 100}
 								className="w-2/3"
 							/>
 							<div>
@@ -492,7 +509,6 @@ const TestPage = () => {
 									<h2 className="text-3xl font-extrabold text-gray-800 mb-4">
 										确定一下答案
 									</h2>
-
 
 									<div className="p-4 rounded   shadow-sm font-bold">
 										<p className="text-xl font-semibold text-black">
@@ -519,15 +535,15 @@ const TestPage = () => {
 										onClick={handlePopWrong}
 										className="text-white px-5 py-2  rounded-full text-xl font-bold h-18"
 									>
-												记错了
-												<Annoyed />
+										记错了
+										<Annoyed />
 									</Button>
 									<Button
 										onClick={handlePopSameMeaning}
 										className="text-white px-5 py-2  rounded-full text-xl font-bold h-18"
 									>
-												一样呀
-												<PartyPopper />
+										一样呀
+										<PartyPopper />
 									</Button>
 								</div>
 							</div>

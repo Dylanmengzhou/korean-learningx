@@ -15,14 +15,18 @@ export async function GET(request: NextRequest) {
 		const bookSeries = searchParams.get("bookSeries");
 		const chapter = searchParams.get("chapter");
 		const status = searchParams.get("status");
+		const userId = searchParams.get("userid");
 
 		// 把参数转换为 number 或对应类型
 		const volumeNum = volume ? Number(volume) : undefined;
 		const chapterNum = chapter ? Number(chapter) : 0;
 		const statusNum = status ? Number(status) : -1;
+		const userIdNum = userId ? Number(userId) : 1;
+
 
 		// 调用 actions.ts 中的方法
 		const data = await getAllWord(
+			userIdNum,
 			volumeNum,
 			bookSeries || "",
 			chapterNum,
@@ -83,4 +87,3 @@ export async function POST(request: NextRequest) {
 		);
 	}
 }
-

@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { use, useMemo } from "react";
 import { useState, useEffect, useTransition } from "react";
 import { useKeenSlider } from "keen-slider/react";
 import "keen-slider/keen-slider.min.css"; // 必须引入它的样式
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { useSession } from "next-auth/react";
 
 /**
  * Word 数据结构
@@ -33,22 +34,28 @@ async function fetchWords(
 	volume?: number,
 	bookSeries?: string,
 	chapter: number = 0,
-	status: number = -1
+	status: number = -1,
+	userid?: number
 ) {
 	try {
 		const query = new URLSearchParams({
 			...(volume ? { volume: String(volume) } : {}),
 			...(bookSeries ? { bookSeries } : {}),
 			...(chapter ? { chapter: String(chapter) } : {}),
+			...(userid ? { userid: String(userid) } : {}),
 			...(status !== null && status !== undefined
 				? { status: String(status) }
 				: {}),
 		}).toString();
 
+
+		console.log("query: ", query);
+
 		const res = await fetch(`/api/words?${query}`, { method: "GET" });
 		const data = await res.json();
 		if (!data.success) {
-			throw new Error(data.error || "获取单词失败");
+			console.error("获取单词失败:", data.error);
+			throw new Error("获取单词失败");
 		}
 		return data.data as Word[];
 	} catch (error) {
@@ -61,7 +68,7 @@ async function fetchWords(
  * 调用 /api/words 接口批量更新单词状态
  */
 async function batchUpdateWordsStatus(
-	updates: { id: number; status: number }[]
+	updates: { id: number; status: number; userId: number }[]
 ) {
 	try {
 		const res = await fetch("/api/words", {
@@ -100,7 +107,10 @@ export default function StudyPage() {
 	const bookSeries = searchParams.get("bookSeries");
 	const chapter = searchParams.get("chapter");
 	const status = searchParams.get("status");
+	const userid = searchParams.get("userid");
 	const [loaded, setLoaded] = useState<boolean[]>([]);
+	const { data: session } = useSession();
+	const router = useRouter();
 
 	// Keen-Slider 当前索引
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -136,7 +146,7 @@ export default function StudyPage() {
 	 * 缓存需要提交到数据库的更新
 	 */
 	const [updateBuffer, setUpdateBuffer] = useState<
-		{ id: number; status: number }[]
+		{ id: number; status: number; userId: number }[]
 	>([]);
 
 	// 1. 当 words 数据变化后，用它的长度初始化 loaded 数组
@@ -160,12 +170,14 @@ export default function StudyPage() {
 	useEffect(() => {
 		async function loadWords() {
 			setLoading(true);
+			console.log("userid from useEffect:", userid);
 			try {
 				const data = await fetchWords(
 					Number(volume),
 					bookSeries?.toString() || "",
 					Number(chapter),
-					Number(status)
+					Number(status),
+					Number(userid)
 				);
 				setWords(data);
 
@@ -193,7 +205,7 @@ export default function StudyPage() {
 	// 2. 批量更新提交逻辑
 	// ----------------------------
 	async function handleBatchUpdate(
-		updates: { id: number; status: number }[]
+		updates: { id: number; status: number; userId: number }[]
 	) {
 		if (!updates.length) return;
 		const res = await batchUpdateWordsStatus(updates);
@@ -205,14 +217,14 @@ export default function StudyPage() {
 	}
 
 	// 组件卸载时，如果还有剩余未提交的 updateBuffer，就提交一次
-	useEffect(() => {
-		return () => {
-			if (updateBuffer.length > 0) {
-				handleBatchUpdate(updateBuffer);
-			}
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	// useEffect(() => {
+	// 	return () => {
+	// 		if (updateBuffer.length > 0) {
+	// 			handleBatchUpdate(updateBuffer);
+	// 		}
+	// 	};
+	// 	// eslint-disable-next-line react-hooks/exhaustive-deps
+	// }, []);
 
 	/**
 	 * 用户点击“认识 / 不认识 / 模糊”后：
@@ -223,12 +235,11 @@ export default function StudyPage() {
 		index: number,
 		state: "认识" | "不认识" | "模糊"
 	) => {
-    // 1) 立即切换到下一张，优先保障 UI 交互的流畅度
-    // 加个时间延迟，让用户感觉到切换
-    setTimeout(() => {
-      instanceRef.current?.next();
-    }, 500);
-
+		// 1) 立即切换到下一张，优先保障 UI 交互的流畅度
+		// 加个时间延迟，让用户感觉到切换
+		setTimeout(() => {
+			instanceRef.current?.next();
+		}, 500);
 
 		// 2) 把更新逻辑放到低优先级中
 		startTransition(() => {
@@ -243,20 +254,36 @@ export default function StudyPage() {
 
 			// 构造本条更新记录
 			const currentWord = words[index];
-			if (!currentWord) return;
+			if (!currentWord || !session || !session.user) return;
 
-			setUpdateBuffer((prev) => {
-				const newBuffer = [
-					...prev,
-					{ id: currentWord.id, status: statusValue },
-				];
-				// 比如一次性提交 5 条，你可以改成 1 也行
-				if (newBuffer.length >= 1) {
-					handleBatchUpdate(newBuffer);
-					return [];
-				}
-				return newBuffer;
-			});
+			// setUpdateBuffer((prev) => {
+			// 	const newBuffer = [
+			// 		...prev,
+			// 		{ id: currentWord.id, status: statusValue, userId: Number(session.user.id) },
+			// 	];
+			// 	console.log("userid: ",session.user.id);
+			// 	// check the type of user id
+			// 	console.log("userid type: ",typeof(session.user.id));
+			// 	// 比如一次性提交 5 条，你可以改成 1 也行
+			// 	if (newBuffer.length >= 1) {
+			// 		handleBatchUpdate(newBuffer);
+			// 		return [];
+			// 	}
+			// 	return newBuffer;
+			// });
+			const update = [
+				{
+					id: currentWord.id,
+					status: statusValue,
+					userId: Number(session.user.id),
+				},
+			];
+
+			try {
+				const res = handleBatchUpdate(update);
+			} catch (error) {
+				console.error("不知道哪里错了", error);
+			}
 		});
 	};
 
@@ -303,7 +330,12 @@ export default function StudyPage() {
 
 	return (
 		<div className="flex flex-col items-center justify-center text-black w-full h-svh bg-gray-100 px-3 py-14 md:py-0 md:h-fit">
-			{loading ? (
+			{session === null ? (
+				<div className="h-svh flex items-center justify-center flex-col gap-5">
+					<p>请先登录</p>
+					<Button onClick={() => router.push("/login")}>登录</Button>
+				</div>
+			) : loading ? (
 				// 加载中状态
 				<div className="flex flex-col items-center justify-center h-svh">
 					<Loader2 className="animate-spin w-10 h-10 text-gray-600" />

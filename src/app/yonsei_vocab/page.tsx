@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 const YonseiVocab = () => {
+	const { data: session } = useSession();
 	const router = useRouter();
 
 	// 存储用户选择
@@ -52,6 +54,9 @@ const YonseiVocab = () => {
 		// 构造查询参数
 		// http://localhost:3000/yonsei_vocab/study?volume=1&chapter=1&bookSeries=%E5%BB%B6%E4%B8%96%E9%9F%A9%E5%9B%BD%E8%AF%AD
 		const query = new URLSearchParams();
+		if (session?.user.id) {
+			query.set("userid", session.user.id);
+		}
 		if (selectedVolume !== null) {
 			query.set("volume", selectedVolume.toString());
 		}
