@@ -1,5 +1,9 @@
 "use server";
-
+import {
+	PrismaClient,
+	WordYonsei,
+	UserWordProgress,
+} from "@prisma/client";
 import prisma from "@/lib/prisma";
 
 /**
@@ -7,6 +11,14 @@ import prisma from "@/lib/prisma";
  * volume、bookSeries、chapter、status 均可选
  * 如果不传，默认查询所有
  */
+
+type WordWithProgress = WordYonsei & {
+	userWordProgresses: Pick<
+		UserWordProgress,
+		"status" | "dictationStatus"
+	>[];
+};
+
 export async function getAllWord(
 	userId: number,
 	volume?: number,
@@ -21,15 +33,17 @@ export async function getAllWord(
 	};
 
 	try {
-		const words = await prisma.wordYonsei.findMany({
-			where: whereCondition,
-			include: {
-				userWordProgresses: {
-					where: { userId: Number(userId) },
-					select: { status: true, dictationStatus: true },
+		const words: WordWithProgress[] =
+			await prisma.wordYonsei.findMany({
+				where: whereCondition,
+				include: {
+					userWordProgresses: {
+						where: { userId: Number(userId) },
+						select: { status: true, dictationStatus: true },
+					},
 				},
-			},
-		});
+			});
+
 		// 格式化返回数据
 		const formattedWords = words
 			.map((word) => {
