@@ -2,7 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
@@ -33,8 +38,12 @@ export default function RegisterPage() {
 
 			// 注册成功后，跳转到登录页
 			router.push("/login");
-		} catch (err: any) {
-			setError(err.message);
+		} catch (err) {
+			if (err instanceof Error) {
+				setError(err.message);
+			} else {
+				setError("发生未知错误");
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -49,7 +58,10 @@ export default function RegisterPage() {
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<form onSubmit={handleSubmit} className="flex flex-col gap-4">
+					<form
+						onSubmit={handleSubmit}
+						className="flex flex-col gap-4"
+					>
 						<div>
 							<Label htmlFor="name">姓名</Label>
 							<Input
@@ -87,9 +99,17 @@ export default function RegisterPage() {
 							/>
 						</div>
 
-						{error && <p className="text-red-500 text-sm text-center">{error}</p>}
+						{error && (
+							<p className="text-red-500 text-sm text-center">
+								{error}
+							</p>
+						)}
 
-						<Button type="submit" className="w-full mt-6" disabled={loading}>
+						<Button
+							type="submit"
+							className="w-full mt-6"
+							disabled={loading}
+						>
 							{loading ? "注册中..." : "注册"}
 						</Button>
 					</form>

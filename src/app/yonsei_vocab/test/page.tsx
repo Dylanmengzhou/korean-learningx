@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 
 interface Word {
@@ -74,7 +74,7 @@ async function updateDictationStatus(updates: {
 }
 
 // ------------------ 组件主体 ------------------
-const TestPage = () => {
+function TestPageContent () {
 	const [index, setIndex] = useState(0);
 	const [isFocused, setIsFocused] = useState(false);
 	const [words, setWords] = useState<Word[]>([]);
@@ -306,6 +306,7 @@ const TestPage = () => {
 		setInputWordHistory((prev) => {
 			const newArr = [...prev];
 			newArr[index] = inputValue;
+			console.log(correct);
 			return newArr;
 		});
 
@@ -555,4 +556,18 @@ const TestPage = () => {
 	);
 };
 
-export default TestPage;
+export default function TestPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className="flex flex-col items-center justify-center h-screen">
+					<Loader2 className="animate-spin w-10 h-10 text-gray-600" />
+					<p className="mt-4 text-gray-600">加载中...</p>
+				</div>
+			}
+		>
+			<TestPageContent />
+		</Suspense>
+	);
+}
+

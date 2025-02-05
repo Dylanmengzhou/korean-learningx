@@ -14,13 +14,11 @@ export async function getAllWord(
 	chapter: number = 0, // 默认值设为 0
 	status: number = -1 // 默认值设为 -1
 ) {
-
-	const whereCondition: any = {
+	const whereCondition = {
 		...(volume ? { volume: Number(volume) } : {}),
 		...(bookSeries ? { bookSeries } : {}),
 		...(chapter > 0 ? { chapter: Number(chapter) } : {}), // 只过滤 chapter > 0
 	};
-
 
 	try {
 		const words = await prisma.wordYonsei.findMany({

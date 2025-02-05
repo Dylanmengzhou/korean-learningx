@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 import {
 	Card,
 	CardContent,
@@ -25,7 +24,7 @@ export default function LoginPage() {
 		setError("");
 		setLoading(true);
 
-		const res: any = await signIn("credentials", {
+		const res = await signIn("credentials", {
 			redirect: false,
 			email,
 			password,

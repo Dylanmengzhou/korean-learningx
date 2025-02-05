@@ -1,5 +1,5 @@
 // pages/api/auth/[...nextauth].ts
-import NextAuth, { Session } from "next-auth";
+import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcrypt";
@@ -65,7 +65,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 	},
 	// JWT 相关可选配置
 	jwt: {
-		secret: process.env.NEXTAUTH_SECRET,
 		maxAge: 10 * 60, // 10 分钟
 	},
 	// 回调函数，可在这里调整 token 或 session

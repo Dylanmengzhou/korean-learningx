@@ -12,7 +12,7 @@ const TestPage = async () => {
 
     return (
         <div className="h-svh w-full flex items-center justify-center flex-col gap-5">
-            <img src={session.user.image} alt="User Avatar" className="w-20 h-20"/>
+            {/* <Image src={session.user.image ?? "/default-avatar.png"}  alt="User Avatar" className="w-20 h-20"/> */}
             {/* <p className=" w-full">{JSON.stringify(session)}</p> */}
             <p>Session expires at: {session.expires}</p>
             <LogoutButton />

@@ -6,14 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 import {
 	Dialog,

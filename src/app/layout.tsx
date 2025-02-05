@@ -1,7 +1,6 @@
 import localFont from "next/font/local";
 import "./globals.css";
 import Navigation from "./components/navigation";
-import { Toaster } from "@/components/ui/toaster"
 import { SessionProvider } from "next-auth/react";
 
 
@@ -24,7 +23,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <SessionProvider>
         <Navigation />
         <main>{children}</main>
-          <Toaster />
         </SessionProvider>
       </body>
     </html>

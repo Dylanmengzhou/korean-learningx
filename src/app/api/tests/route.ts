@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateDictationStatus } from "@/app/actions/actions";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 
 export async function POST(request: NextRequest) {
 	try {

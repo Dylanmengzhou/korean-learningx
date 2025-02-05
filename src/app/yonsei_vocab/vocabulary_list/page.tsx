@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams,useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -88,7 +88,7 @@ async function batchUpdateWordsStatus(
 /**
  * 列表学习页面
  */
-export default function VocabularyList() {
+function VocabularyListContent() {
 	const [words, setWords] = useState<Word[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -114,9 +114,6 @@ export default function VocabularyList() {
 	 * 缓存需要提交到数据库的更新
 	 * 每次用户标记一个单词，就 push 进来 { id, status }
 	 */
-	const [updateBuffer, setUpdateBuffer] = useState<
-		{ id: number; status: number }[]
-	>([]);
 
 	// 不同状态对应的卡片背景色
 	const cardColors = {
@@ -159,7 +156,7 @@ export default function VocabularyList() {
 			}
 		}
 		loadWords();
-	}, [volume, bookSeries, chapter, status]);
+	}, [volume, bookSeries, chapter, status, userid]);
 
 	/**
 	 * 把“待更新数组”里的数据一次性发到服务器
@@ -216,7 +213,7 @@ export default function VocabularyList() {
 			},
 		];
 		try {
-			const res = handleBatchUpdate(update);
+			handleBatchUpdate(update);
 		} catch (error) {
 			console.error("不知道哪里错了", error);
 		}
@@ -349,5 +346,20 @@ export default function VocabularyList() {
 				</>
 			)}
 		</div>
+	);
+}
+
+export default function VocabularyList() {
+	return (
+		<Suspense
+			fallback={
+				<div className="flex flex-col items-center justify-center h-screen">
+					<Loader2 className="animate-spin w-10 h-10 text-gray-600" />
+					<p className="mt-4 text-gray-600">加载中...</p>
+				</div>
+			}
+		>
+			<VocabularyListContent />
+		</Suspense>
 	);
 }
