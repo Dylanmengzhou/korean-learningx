@@ -1,22 +1,26 @@
 "use server";
-import {
-	WordYonsei,
-	UserWordProgress,
-} from "@prisma/client";
 import prisma from "@/lib/prisma";
 
-/**
- * 查询符合条件的单词
- * volume、bookSeries、chapter、status 均可选
- * 如果不传，默认查询所有
- */
+interface UserWordProgress {
+	status: number;
+	dictationStatus: number;
+}
 
-type WordWithProgress = WordYonsei & {
-	userWordProgresses: Pick<
-		UserWordProgress,
-		"status" | "dictationStatus"
-	>[];
-};
+interface WordYonsei {
+	id: number;
+	korean: string;
+	type: string;
+	phrase?: string | null;
+	phraseCn?: string | null;
+	example?: string | null;
+	exampleCn?: string | null;
+	chinese: string;
+	volume: number;
+	bookSeries: string;
+	chapter?: number | null;
+	createdAt: Date;
+	userWordProgresses: UserWordProgress[];
+}
 
 export async function getAllWord(
 	userId: number,
@@ -32,16 +36,15 @@ export async function getAllWord(
 	};
 
 	try {
-		const words: WordWithProgress[] =
-			await prisma.wordYonsei.findMany({
-				where: whereCondition,
-				include: {
-					userWordProgresses: {
-						where: { userId: Number(userId) },
-						select: { status: true, dictationStatus: true },
-					},
+		const words: WordYonsei[] = await prisma.wordYonsei.findMany({
+			where: whereCondition,
+			include: {
+				userWordProgresses: {
+					where: { userId: Number(userId) },
+					select: { status: true, dictationStatus: true },
 				},
-			});
+			},
+		});
 
 		// 格式化返回数据
 		const formattedWords = words
@@ -112,7 +115,7 @@ export async function updateWordsStatus(
 }
 
 export async function updateDictationStatus(
-	userid: number,
+	userId: number,
 	id: number,
 	dictationStatus: number
 ) {
@@ -120,13 +123,13 @@ export async function updateDictationStatus(
 		await prisma.userWordProgress.upsert({
 			where: {
 				userId_wordId: {
-					userId: Number(userid), // 确保是 Number
+					userId: Number(userId), // 确保是 Number
 					wordId: Number(id), // 确保是 Number
 				},
 			},
 			update: { dictationStatus: Number(dictationStatus) },
 			create: {
-				userId: Number(userid), // 确保是 Number
+				userId: Number(userId), // 确保是 Number
 				wordId: Number(id), // 确保是 Number
 				dictationStatus: Number(dictationStatus),
 			},
