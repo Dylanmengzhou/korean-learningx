@@ -1,5 +1,6 @@
 "use server";
 import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 interface UserWordProgress {
 	status: number;
@@ -133,6 +134,61 @@ export async function updateDictationStatus(
 				wordId: Number(id), // 确保是 Number
 				dictationStatus: Number(dictationStatus),
 			},
+		});
+
+		return { success: true };
+	} catch (error) {
+		console.error("❌ 更新失败:", error);
+		return { success: false, error };
+	}
+}
+
+export async function updateUserInfo(
+	userId: string,
+	email: string,
+	name: string
+) {
+	try {
+		await prisma.user.update({
+			where: { id: Number(userId) },
+			data: { email, name },
+		});
+
+		return { success: true };
+	} catch (error) {
+		console.error("❌ 更新失败:", error);
+		return { success: false, error };
+	}
+}
+
+export async function updateUserPassword(
+	userId: string,
+	currentPassword: string,
+	newPassword: string
+) {
+	try {
+		const user = await prisma.user.findMany({
+			where: { id: Number(userId) },
+			select: { password: true },
+		})
+		if (!user) {
+			return { success: false, error: "用户不存在" };
+		}
+
+		const password = user[0].password;
+		if (!password) {
+			return { success: false, error: "用户密码不存在" };
+		}
+		const passwordMatch = await bcrypt.compare(currentPassword, password);
+
+		if (!passwordMatch) {
+			return { success: false, error: "密码错误" };
+		}
+
+		const hashPassword = await bcrypt.hash(newPassword, 10);
+		await prisma.user.update({
+			where: { id: Number(userId) },
+			data: { password: hashPassword },
 		});
 
 		return { success: true };

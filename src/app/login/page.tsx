@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
@@ -11,6 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 
 export default function LoginPage() {
 	const router = useRouter();
@@ -18,6 +19,7 @@ export default function LoginPage() {
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
+	const { status } = useSession();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -34,9 +36,15 @@ export default function LoginPage() {
 			setError(res.error);
 			setLoading(false);
 		} else {
-			router.push("/test");
+			router.push("/profile");
 		}
 	};
+
+	useEffect(() => {
+		if (status === "authenticated") {
+			router.push("/profile");
+		}
+	}, [status, router]);
 
 	return (
 		<div className="h-svh flex items-center justify-center bg-gray-100">

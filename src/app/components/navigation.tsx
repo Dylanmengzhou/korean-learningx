@@ -1,20 +1,9 @@
 "use client";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
 
 import {
 	Avatar,
@@ -31,12 +20,10 @@ export default function Navigation() {
 	const [isMobile, setIsMobile] = useState(false);
 	const [hydrated, setHydrated] = useState(false); // 确保 SSR 加载时不影响 UI
 	const [avatarUrl, setAvatarUrl] = useState("");
-	const [email, setEmail] = useState("");
 	const [name, setName] = useState("");
 	useEffect(() => {
 		if (session.data && session.data.user) {
 			setAvatarUrl(session.data.user.image || "");
-			setEmail(session.data.user.email || "");
 			setName(session.data.user.name || "");
 		}
 	}, [session.data]);
@@ -84,7 +71,17 @@ export default function Navigation() {
 				}`}
 			>
 				<div className="flex w-full justify-between p-5">
-					<div className="font-bold text-2xl">舟舟的韩语笔记</div>
+					<button className="" onClick={() => handleLinkClick("/")}>
+						{name != "" ? (
+							<div className="font-bold text-2xl">
+								{name + "的"}韩语笔记
+							</div>
+						) : session.status != "unauthenticated" ? (
+							<div className="font-bold text-2xl"></div>
+						) : (
+							<div className="font-bold text-2xl">韩语笔记</div>
+						)}
+					</button>
 
 					{/* 确保 `hydrated` 之后才渲染导航栏，避免闪烁问题 */}
 					{hydrated &&
@@ -128,56 +125,10 @@ export default function Navigation() {
 								</>
 							) : (
 								<div className="relative mr-20 flex justify-center items-center">
-									<Dialog>
-										<DialogTrigger>
-											<Avatar>
-												<AvatarImage src={avatarUrl} />
-												<AvatarFallback>CN</AvatarFallback>
-											</Avatar>
-										</DialogTrigger>
-										<DialogContent className="sm:max-w-[425px]">
-											<DialogHeader>
-												<DialogTitle className="flex flex-col items-center justify-center gap-3">
-													<Avatar className="w-16 h-16">
-														<AvatarImage src={avatarUrl} />
-														<AvatarFallback>CN</AvatarFallback>
-													</Avatar>
-													<LogoutButton />
-												</DialogTitle>
-											</DialogHeader>
-											<div className="grid gap-4 py-4">
-												<div className="grid grid-cols-4 items-center gap-4">
-													<Label
-														htmlFor="name"
-														className="text-right"
-													>
-														昵称
-													</Label>
-													<Input
-														id="name"
-														value={name}
-														className="col-span-3"
-													/>
-												</div>
-												<div className="grid grid-cols-4 items-center gap-4">
-													<Label
-														htmlFor="username"
-														className="text-right"
-													>
-														Email
-													</Label>
-													<Input
-														id="username"
-														value={email}
-														className="col-span-3"
-													/>
-												</div>
-											</div>
-											<DialogFooter className="flex flex-row">
-												<Button type="submit">Save changes</Button>
-											</DialogFooter>
-										</DialogContent>
-									</Dialog>
+									<Avatar onClick={() => handleLinkClick("/profile")}>
+										<AvatarImage src={avatarUrl} />
+										<AvatarFallback>CN</AvatarFallback>
+									</Avatar>
 								</div>
 							)}
 						</div>
@@ -232,7 +183,7 @@ export default function Navigation() {
 						</>
 					) : (
 						<div className=" flex flex-col items-center justify-center gap-5">
-							<Avatar>
+							<Avatar onClick={() => handleLinkClick("/profile")}>
 								<AvatarImage src={avatarUrl} />
 								<AvatarFallback>CN</AvatarFallback>
 							</Avatar>
