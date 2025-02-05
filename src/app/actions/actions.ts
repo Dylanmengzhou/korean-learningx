@@ -1,6 +1,5 @@
 "use server";
 import {
-	PrismaClient,
 	WordYonsei,
 	UserWordProgress,
 } from "@prisma/client";
