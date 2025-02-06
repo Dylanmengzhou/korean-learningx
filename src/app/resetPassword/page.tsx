@@ -1,4 +1,6 @@
 "use client";
+import { ZodError } from "zod";
+import { updateCurrentPassword, updateNewPassword } from "@/lib/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +15,7 @@ import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 
 async function handlePasswordUpdate(
 	userid: string,
@@ -51,48 +54,57 @@ const ResetPasswordPage = () => {
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (formData.newPassword !== formData.confirmPassword) {
-			// alert("新密码与确认密码不匹配！");
-			setResult({
-				success: false,
-				error: "新密码与确认密码不匹配！",
-			});
-
-			return;
-		}
-		if (formData.currentPassword === formData.newPassword) {
-			// alert("新密码与旧密码相同！");
-			setResult({
-				success: false,
-				error: "新密码不能与旧密码相同！",
-			});
-			return;
-		}
-		if (status === "authenticated") {
-			handlePasswordUpdate(
-				session.user.id,
-				formData.currentPassword,
-				formData.newPassword
-			)
-				.then((res) => {
-					if (res.success) {
-						// alert("密码重置成功！");
-						setResult({ success: true, error: "" });
-						setTimeout(() => {
-							signOut({ redirectTo: "/login", redirect: true });
-						}, 1000);
-					} else {
-						// alert("密码重置失败：" + res.error);
-						setResult({ success: false, error: res.error });
-					}
-				})
-				.catch((error) => {
-					// alert("密码重置失败：" + error);
-					setResult({
-						success: false,
-						error: "密码重置失败：" + error,
-					});
+		try {
+			updateCurrentPassword.parse(formData.currentPassword);
+			updateNewPassword.parse(formData.newPassword);
+			if (formData.newPassword !== formData.confirmPassword) {
+				// alert("新密码与确认密码不匹配！");
+				setResult({
+					success: false,
+					error: "新密码与确认密码不匹配！",
 				});
+
+				return;
+			}
+			if (formData.currentPassword === formData.newPassword) {
+				// alert("新密码与旧密码相同！");
+				setResult({
+					success: false,
+					error: "新密码不能与旧密码相同！",
+				});
+				return;
+			}
+			if (status === "authenticated") {
+				handlePasswordUpdate(
+					session.user.id,
+					formData.currentPassword,
+					formData.newPassword
+				)
+					.then((res) => {
+						if (res.success) {
+							// alert("密码重置成功！");
+							setResult({ success: true, error: "" });
+							setTimeout(() => {
+								signOut({ redirectTo: "/login", redirect: true });
+							}, 1000);
+						} else {
+							// alert("密码重置失败：" + res.error);
+							setResult({ success: false, error: res.error });
+						}
+					})
+					.catch((error) => {
+						// alert("密码重置失败：" + error);
+						setResult({
+							success: false,
+							error: "密码重置失败：" + error,
+						});
+					});
+			}
+		} catch (error) {
+			if (error instanceof ZodError) {
+				setResult({ success: false, error: error.errors[0].message });
+				console.log(error.errors[0].message);
+			}
 		}
 
 		// 在此处理实际的密码重置逻辑
@@ -101,8 +113,14 @@ const ResetPasswordPage = () => {
 	return (
 		<div className="flex h-svh w-full justify-center items-center bg-gray-100 p-4">
 			<Card className="w-full max-w-md shadow-xl rounded-2xl">
-				<CardHeader>
-					<CardTitle className="text-center text-2xl font-semibold">
+				<CardHeader className="relative flex items-center justify-center px-4 py-8">
+					<Button
+						className="absolute left-2 top-1/2 -translate-y-1/2 bg-transparent shadow-none border-none hover:bg-transparent text-black"
+						onClick={() => router.back()}
+                    >
+                         <ChevronLeft size={40} />
+					</Button>
+					<CardTitle className="text-2xl font-semibold text-center">
 						重置密码
 					</CardTitle>
 				</CardHeader>

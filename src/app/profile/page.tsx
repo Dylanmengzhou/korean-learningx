@@ -39,7 +39,7 @@ async function updateProfile(
 
 const TestPage = () => {
 	const [isEdit, setIsEdit] = useState(false);
-	const { data: session, status } = useSession();
+	const { data: session, status, update } = useSession();
 	const router = useRouter();
 
 	const [name, setName] = useState("");
@@ -92,31 +92,41 @@ const TestPage = () => {
 	};
 
 	const handleSave = async () => {
-		if (infoChange) {
-			console.log("保存的数据：", { name, email });
-			// Here, you'd send the data to the server (implementation later)
-			if (session?.user?.id) {
-				console.log("session?.user?.id", session?.user?.id);
-				console.log("name", name);
-				console.log("email", email);
-				const result = await updateProfile(
-					session?.user?.id,
-					name,
-					email
-				);
-				if (result.success) {
-					console.log("保存成功");
-					setResult(result);
+		if (!infoChange) return; // 没有修改，不执行保存
+
+		if (session?.user?.id) {
+			console.log("session?.user?.id", session?.user?.id);
+			console.log("name", name);
+			console.log("email", email);
+
+			const result = await updateProfile(
+				session?.user?.id,
+				name,
+				email
+			);
+
+			if (result.success) {
+				console.log("保存成功");
+				setResult(result);
+
+				// 检查是否修改了邮箱
+				if (email !== session?.user?.email) {
+					console.log("邮箱已修改，强制登出");
 					setTimeout(() => {
 						signOut({ redirectTo: "/login", redirect: true });
 					}, 1000);
 				} else {
-					setResult(result);
-					console.log("保存失败");
+					// 只修改了昵称，不登出，手动更新 session
+					console.log("昵称已修改，更新session");
+					await update({ user: { ...session.user, name } });
 				}
+			} else {
+				setResult(result);
+				console.log("保存失败");
 			}
 		}
-		setIsEdit(false); // Exit edit mode after saving
+
+		setIsEdit(false); // 退出编辑模式
 		setInfoChange(false);
 	};
 
@@ -177,7 +187,13 @@ const TestPage = () => {
 								type="password"
 								disabled={true}
 							/>
-							<Button onClick={()=>{router.push("/resetPassword")}}>修改密码</Button>
+							<Button
+								onClick={() => {
+									router.push("/resetPassword");
+								}}
+							>
+								修改密码
+							</Button>
 						</div>
 					</div>
 				</CardContent>

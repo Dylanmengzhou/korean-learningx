@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { updatePassword,emailCheck } from "@/lib/zod";
 import {
 	Card,
 	CardContent,
@@ -10,11 +11,13 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { ZodError } from "zod";
 
 export default function RegisterPage() {
 	const router = useRouter();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
 	const [name, setName] = useState("");
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -25,30 +28,45 @@ export default function RegisterPage() {
 		setError("");
 
 		try {
-			const res = await fetch("/api/register", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email, password, name }),
-			});
-			const data = await res.json();
+			updatePassword.parse(password);
+			emailCheck.parse(email);
 
-			if (!res.ok) {
-				throw new Error(data.message || "注册失败");
+			if (password !== confirmPassword) {
+				setError("两次输入的密码不一致");
+				setLoading(false); // 确保停止loading
+				return;
 			}
 
-			// 注册成功后，跳转到登录页
-			router.push("/login");
-		} catch (err) {
-			if (err instanceof Error) {
-				setError(err.message);
-			} else {
-				setError("发生未知错误");
+			try {
+				const res = await fetch("/api/register", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ email, password, name }),
+				});
+				const data = await res.json();
+
+				if (!res.ok) {
+					throw new Error(data.message || "注册失败");
+				}
+
+				// 注册成功后，跳转到登录页
+				router.push("/login");
+			} catch (err) {
+				if (err instanceof Error) {
+					setError(err.message);
+				} else {
+					setError("发生未知错误");
+				}
+				setLoading(false); // 确保停止loading
 			}
-		} finally {
-			setLoading(false);
+		} catch (error) {
+			if (error instanceof ZodError) {
+				console.log(error.errors);
+				setError(error.errors[0].message); // 显示Zod错误
+			}
+			setLoading(false); // 这里加上setLoading(false)
 		}
 	};
-
 	return (
 		<div className="h-svh flex items-center justify-center bg-gray-100">
 			<Card className="w-10/12 lg:w-full max-w-sm p-6 shadow-lg rounded-xl bg-white">
@@ -93,6 +111,18 @@ export default function RegisterPage() {
 								type="password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
+								placeholder="请输入密码"
+								className="mt-1"
+								required
+							/>
+						</div>
+						<div>
+							<Label htmlFor="password">确认密码</Label>
+							<Input
+								id="password"
+								type="password"
+								value={confirmPassword}
+								onChange={(e) => setConfirmPassword(e.target.value)}
 								placeholder="请输入密码"
 								className="mt-1"
 								required
