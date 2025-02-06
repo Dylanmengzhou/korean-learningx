@@ -373,7 +373,7 @@ function TestPageContent() {
 					<p>请先登录</p>
 					<Button onClick={() => router.push("/login")}>登录</Button>
 				</div>
-			) : session.user.membershipType !== "vip" ? (
+			) : session?.user?.membershipType !== "vip" ? (
 				<div className="h-svh flex items-center justify-center flex-col gap-5">
 					<p>您还不是VIP，请向管理员申请</p>
 				</div>
