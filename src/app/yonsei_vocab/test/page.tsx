@@ -74,7 +74,7 @@ async function updateDictationStatus(updates: {
 }
 
 // ------------------ 组件主体 ------------------
-function TestPageContent () {
+function TestPageContent() {
 	const [index, setIndex] = useState(0);
 	const [isFocused, setIsFocused] = useState(false);
 	const [words, setWords] = useState<Word[]>([]);
@@ -370,6 +370,10 @@ function TestPageContent () {
 					<p>请先登录</p>
 					<Button onClick={() => router.push("/login")}>登录</Button>
 				</div>
+			) : session.user.membershipType !== "vip" ? (
+				<div className="h-svh flex items-center justify-center flex-col gap-5">
+					<p>您还不是VIP，请向管理员申请</p>
+				</div>
 			) : loading ? (
 				// 2. 正在加载
 				<div className="flex flex-col items-center justify-center h-full w-full bg-yellow-50 pt-20 text-right">
@@ -554,7 +558,7 @@ function TestPageContent () {
 			)}
 		</div>
 	);
-};
+}
 
 export default function TestPage() {
 	return (
@@ -570,4 +574,3 @@ export default function TestPage() {
 		</Suspense>
 	);
 }
-

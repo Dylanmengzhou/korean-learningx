@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
 	Card,
@@ -12,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
 	const router = useRouter();
@@ -26,23 +26,28 @@ export default function LoginPage() {
 		setError("");
 		setLoading(true);
 
-		const res = await signIn("credentials", {
-			redirect: false,
-			email,
-			password,
+		const res = await fetch("/api/login", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, password }),
 		});
+		const data = await res.json();
 
-		if (res?.error) {
-			setError(res.error);
+		if (data?.success === false) {
+			setError(data.message as string);
 			setLoading(false);
 		} else {
-			router.push("/profile");
+			await signIn("credentials", {
+				redirect: false,
+				email,
+				password,
+			});
 		}
 	};
 
 	useEffect(() => {
 		if (status === "authenticated") {
-			router.push("/profile");
+			router.push("/");
 		}
 	}, [status, router]);
 
@@ -87,11 +92,11 @@ export default function LoginPage() {
 								{error}
 							</p>
 						)}
-						{loading && !error && (
+						{/* {loading && !error && (
 							<p className="text-blue-500 text-sm text-center">
 								登录中...
 							</p>
-						)}
+						)} */}
 						<Button
 							type="submit"
 							className="w-full mt-10"

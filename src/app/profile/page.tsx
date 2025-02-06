@@ -106,23 +106,19 @@ const TestPage = () => {
 			);
 
 			if (result.success) {
-				console.log("保存成功");
 				setResult(result);
 
 				// 检查是否修改了邮箱
 				if (email !== session?.user?.email) {
-					console.log("邮箱已修改，强制登出");
 					setTimeout(() => {
 						signOut({ redirectTo: "/login", redirect: true });
 					}, 1000);
 				} else {
 					// 只修改了昵称，不登出，手动更新 session
-					console.log("昵称已修改，更新session");
 					await update({ user: { ...session.user, name } });
 				}
 			} else {
 				setResult(result);
-				console.log("保存失败");
 			}
 		}
 
@@ -139,7 +135,7 @@ const TestPage = () => {
 	}
 
 	return (
-		<div className="h-svh w-full flex items-center justify-center flex-col gap-5">
+		<div className="h-svh w-full flex items-center justify-center flex-col gap-5 pt-10">
 			<Card className="w-11/12 lg:w-2/3 h-11/12 flex flex-col gap-2 justify-center items-center py-5">
 				<CardHeader className="flex flex-col w-full items-center">
 					<CardTitle className="w-full flex justify-center items-center">
@@ -149,7 +145,23 @@ const TestPage = () => {
 						</Avatar>
 					</CardTitle>
 					<CardDescription className="w-full flex justify-center items-center">
-						<p>Session expires at: {typeof session?.expires}</p>
+						{session?.user?.membershipType !== "free" ? (
+							<div className="flex flex-col items-center">
+								<p>尊敬的{session?.user?.name}会员</p>
+								<p>
+									VIP到期时间:{" "}
+									{session?.user?.membershipEnd
+										? new Date(
+												session.user.membershipEnd
+										  ).toLocaleString()
+										: "未知"}
+								</p>
+							</div>
+						) : (
+							<div className="flex flex-col items-center">
+								<p>{session?.user?.name}</p>
+							</div>
+						)}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="w-9/12 flex flex-col gap-5">

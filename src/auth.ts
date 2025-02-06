@@ -2,7 +2,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 
 declare module "next-auth" {
@@ -12,6 +12,8 @@ declare module "next-auth" {
 			name?: string | null;
 			email?: string | null;
 			image?: string | null;
+			membershipType?: string | null;
+			membershipEnd?: string | null;
 		};
 	}
 }
@@ -54,6 +56,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					name: user.name,
 					email: user.email,
 					image: user.image,
+					membershipType: user.membershipType,
+					membershipEnd: user.membershipEnd,
 				};
 			},
 		}),
@@ -81,6 +85,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					token.name = dbUser.name;
 					token.email = dbUser.email;
 					token.image = dbUser.image;
+					token.membershipType = dbUser.membershipType;
+					token.membershipEnd = dbUser.membershipEnd;
 				}
 			}
 			return token;
@@ -91,6 +97,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				session.user.name = token.name as string;
 				session.user.email = token.email as string;
 				session.user.image = token.image as string;
+				session.user.membershipType = token.membershipType as string;
+				session.user.membershipEnd = token.membershipEnd as string;
 			}
 			return session;
 		},

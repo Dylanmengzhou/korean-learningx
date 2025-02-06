@@ -295,48 +295,50 @@ function StudyPageContent() {
 	}, []);
 
 	return (
-			<div className="flex flex-col items-center justify-center text-black w-full h-svh bg-gray-100 px-3 py-14 md:py-0 md:h-fit">
-				{session === null ? (
-					<div className="h-svh flex items-center justify-center flex-col gap-5">
-						<p>请先登录</p>
-						<Button onClick={() => router.push("/login")}>
-							登录
-						</Button>
-					</div>
-				) : loading ? (
-					// 加载中状态
-					<div className="flex flex-col items-center justify-center h-svh">
-						<Loader2 className="animate-spin w-10 h-10 text-gray-600" />
-						<p className="mt-4 text-gray-600">加载中...</p>
-					</div>
-				) : words.length === 0 ? (
-					// 没有单词
-					<div className="flex flex-col items-center justify-center h-svh">
-						<Card>
-							<CardContent className="py-6 px-8 text-center">
-								<p className="text-lg">这里没有单词</p>
-							</CardContent>
-						</Card>
-					</div>
-				) : (
-					// 有单词的情况，渲染轮播
-					<div className="flex flex-col items-center justify-center w-full gap-1 mt-16">
-						{/* 轮播容器 */}
-						<div
-							ref={sliderRef}
-							className="keen-slider w-full max-w-xl"
-						>
-							{words.map((word, index) => {
-								const currentState = selectedStates[index] || null;
+		<div className="flex flex-col items-center justify-center text-black w-full h-svh bg-gray-100 px-3 py-14 md:py-0 md:h-fit">
+			{session === null ? (
+				<div className="h-svh flex items-center justify-center flex-col gap-5">
+					<p>请先登录</p>
+					<Button onClick={() => router.push("/login")}>登录</Button>
+				</div>
+			) : session.user.membershipType !== "vip" ? (
+				<div className="h-svh flex items-center justify-center flex-col gap-5">
+					<p>您还不是VIP，请向管理员申请</p>
+				</div>
+			) : loading ? (
+				// 加载中状态
+				<div className="flex flex-col items-center justify-center h-svh">
+					<Loader2 className="animate-spin w-10 h-10 text-gray-600" />
+					<p className="mt-4 text-gray-600">加载中...</p>
+				</div>
+			) : words.length === 0 ? (
+				// 没有单词
+				<div className="flex flex-col items-center justify-center h-svh">
+					<Card>
+						<CardContent className="py-6 px-8 text-center">
+							<p className="text-lg">这里没有单词</p>
+						</CardContent>
+					</Card>
+				</div>
+			) : (
+				// 有单词的情况，渲染轮播
+				<div className="flex flex-col items-center justify-center w-full gap-1 mt-16">
+					{/* 轮播容器 */}
+					<div
+						ref={sliderRef}
+						className="keen-slider w-full max-w-xl"
+					>
+						{words.map((word, index) => {
+							const currentState = selectedStates[index] || null;
 
-								return (
-									<div
-										className="keen-slider__slide lazy__slide p-2"
-										key={word.id}
-									>
-										{loaded[index] ? (
-											<Card
-												className={`
+							return (
+								<div
+									className="keen-slider__slide lazy__slide p-2"
+									key={word.id}
+								>
+									{loaded[index] ? (
+										<Card
+											className={`
                       transition-all duration-300
                       ${
 												currentState
@@ -345,71 +347,71 @@ function StudyPageContent() {
 											}
                       drop-shadow-lg shadow-md border-none backdrop-blur-3xl
                     `}
-											>
-												<CardContent className="flex flex-col h-[450px] lg:h-[600px] md:h-[600px] justify-between p-6">
-													<div className="flex flex-col gap-5 flex-grow justify-between lg:pt-10 md:pt-10">
-														{/* 上方：单词、词性、中文 */}
-														<div className="flex gap-5">
-															<div className="flex justify-center items-center font-bold text-3xl">
-																{word.korean}
-															</div>
-															<div className="text-base bg-gray-200 px-2 py-1 rounded-sm flex justify-center items-center md:bg-opacity-65 bg-opacity-50 lg:bg-opacity-65">
-																{word.type}
-															</div>
-															<div className="flex justify-center items-center font-light text-gray-700 text-3xl">
-																{visiable
-																	? word.chinese
-																	: "_".repeat(word.chinese.length)}
-															</div>
+										>
+											<CardContent className="flex flex-col h-[450px] lg:h-[600px] md:h-[600px] justify-between p-6">
+												<div className="flex flex-col gap-5 flex-grow justify-between lg:pt-10 md:pt-10">
+													{/* 上方：单词、词性、中文 */}
+													<div className="flex gap-5">
+														<div className="flex justify-center items-center font-bold text-3xl">
+															{word.korean}
 														</div>
-
-														{/* 搭配 */}
-														<div>
-															<div className="font-bold text-xl">
-																搭配：{word.phrase}
-															</div>
-															<div className="flex">
-																<div className="text-gray-700 text-xl font-light">
-																	中文：
-																</div>
-																<div className="text-gray-700 text-xl font-light">
-																	{visiable && word.phraseCn
-																		? word.phraseCn
-																		: word.phraseCn
-																		? "_".repeat(
-																				word.phrase?.length || 0
-																		  )
-																		: ""}
-																</div>
-															</div>
+														<div className="text-base bg-gray-200 px-2 py-1 rounded-sm flex justify-center items-center md:bg-opacity-65 bg-opacity-50 lg:bg-opacity-65">
+															{word.type}
 														</div>
+														<div className="flex justify-center items-center font-light text-gray-700 text-3xl">
+															{visiable
+																? word.chinese
+																: "_".repeat(word.chinese.length)}
+														</div>
+													</div>
 
-														{/* 例句 */}
-														<div>
-															<div className="font-bold text-xl">
-																例句：{word.example}
+													{/* 搭配 */}
+													<div>
+														<div className="font-bold text-xl">
+															搭配：{word.phrase}
+														</div>
+														<div className="flex">
+															<div className="text-gray-700 text-xl font-light">
+																中文：
 															</div>
-															<div className="flex">
-																<div className="text-gray-700 text-xl font-light">
-																	中文：
-																</div>
-																<div className="text-gray-700 text-xl font-light">
-																	{visiable && word.exampleCn
-																		? word.exampleCn
-																		: word.exampleCn
-																		? "_".repeat(
-																				word.example?.length || 0
-																		  )
-																		: ""}
-																</div>
+															<div className="text-gray-700 text-xl font-light">
+																{visiable && word.phraseCn
+																	? word.phraseCn
+																	: word.phraseCn
+																	? "_".repeat(
+																			word.phrase?.length || 0
+																	  )
+																	: ""}
 															</div>
 														</div>
 													</div>
 
-													{/* 底部：按钮 */}
-													<div className="w-full flex justify-center md:mt-40 mt-5">
-														<div
-															className={`
+													{/* 例句 */}
+													<div>
+														<div className="font-bold text-xl">
+															例句：{word.example}
+														</div>
+														<div className="flex">
+															<div className="text-gray-700 text-xl font-light">
+																中文：
+															</div>
+															<div className="text-gray-700 text-xl font-light">
+																{visiable && word.exampleCn
+																	? word.exampleCn
+																	: word.exampleCn
+																	? "_".repeat(
+																			word.example?.length || 0
+																	  )
+																	: ""}
+															</div>
+														</div>
+													</div>
+												</div>
+
+												{/* 底部：按钮 */}
+												<div className="w-full flex justify-center md:mt-40 mt-5">
+													<div
+														className={`
                             flex flex-row gap-2 rounded-full px-1 py-1 w-fit transition-all duration-300
                             ${
 															currentState
@@ -417,78 +419,77 @@ function StudyPageContent() {
 																: "bg-gray-200"
 														}
                           `}
+													>
+														<Button
+															className="rounded-full"
+															onClick={() =>
+																handleSelectState(index, "认识")
+															}
 														>
-															<Button
-																className="rounded-full"
-																onClick={() =>
-																	handleSelectState(index, "认识")
-																}
-															>
-																认识
-															</Button>
-															<Button
-																className="rounded-full"
-																onClick={() =>
-																	handleSelectState(index, "不认识")
-																}
-															>
-																不认识
-															</Button>
-															<Button
-																className="rounded-full"
-																onClick={() =>
-																	handleSelectState(index, "模糊")
-																}
-															>
-																模糊
-															</Button>
-														</div>
+															认识
+														</Button>
+														<Button
+															className="rounded-full"
+															onClick={() =>
+																handleSelectState(index, "不认识")
+															}
+														>
+															不认识
+														</Button>
+														<Button
+															className="rounded-full"
+															onClick={() =>
+																handleSelectState(index, "模糊")
+															}
+														>
+															模糊
+														</Button>
 													</div>
-												</CardContent>
-											</Card>
-										) : (
-											loadingComponent
-										)}
-									</div>
-								);
-							})}
-						</div>
+												</div>
+											</CardContent>
+										</Card>
+									) : (
+										loadingComponent
+									)}
+								</div>
+							);
+						})}
+					</div>
 
-						{/* 上/下一张（大屏才显示） */}
-						<div className="my-4 hidden gap-4 md:hidden lg:flex ">
-							<Button onClick={handlePrevious}>上一张</Button>
-							<Button onClick={handleNext}>下一张</Button>
-						</div>
+					{/* 上/下一张（大屏才显示） */}
+					<div className="my-4 hidden gap-4 md:hidden lg:flex ">
+						<Button onClick={handlePrevious}>上一张</Button>
+						<Button onClick={handleNext}>下一张</Button>
+					</div>
 
-						{/* 进度条 */}
-						<div className="w-full p-5 flex flex-col gap-2 max-w-xl">
-							<Slider
-								className="h-2"
-								max={words.length - 1}
-								step={1}
-								value={[currentIndex]}
-								onValueChange={(val) => {
-									goToSlide(val[0]);
-								}}
-							/>
-							<div className="text-center text-sm text-gray-600">
-								{currentIndex + 1} / {words.length}
-							</div>
-						</div>
-
-						{/* 显示/隐藏中文按钮 */}
-						<div
-							className="cursor-pointer"
-							onClick={() => setVisiable(!visiable)}
-						>
-							{visiable ? <Eye /> : <EyeOff />}
+					{/* 进度条 */}
+					<div className="w-full p-5 flex flex-col gap-2 max-w-xl">
+						<Slider
+							className="h-2"
+							max={words.length - 1}
+							step={1}
+							value={[currentIndex]}
+							onValueChange={(val) => {
+								goToSlide(val[0]);
+							}}
+						/>
+						<div className="text-center text-sm text-gray-600">
+							{currentIndex + 1} / {words.length}
 						</div>
 					</div>
-				)}
-			</div>
+
+					{/* 显示/隐藏中文按钮 */}
+					<div
+						className="cursor-pointer"
+						onClick={() => setVisiable(!visiable)}
+					>
+						{visiable ? <Eye /> : <EyeOff />}
+					</div>
+				</div>
+			)}
+		</div>
 	);
 }
-
 
 export default function StudyPage() {
 	return (

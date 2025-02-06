@@ -262,6 +262,10 @@ function VocabularyListContent() {
 					<p>请先登录</p>
 					<Button onClick={() => router.push("/login")}>登录</Button>
 				</div>
+			) : session.user.membershipType !== "vip" ? (
+				<div className="h-svh flex items-center justify-center flex-col gap-5">
+					<p>您还不是VIP，请向管理员申请</p>
+				</div>
 			) : (
 				<>
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-20 lg:pt-40 items-center justify-items-center text-black w-full h-full bg-gray-100 px-3 mx-auto">

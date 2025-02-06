@@ -13,16 +13,17 @@ datasource db {
  * 用户表 (与 NextAuth 兼容)
  */
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String?   @unique
-  password      String?
-  name          String?
-  image         String    @default("https://robohash.org/c143b89fb9077cdd6fd77269a7bfefb5?set=set4&bgset=&size=400x400")
-  emailVerified DateTime?
-  createdAt     DateTime  @default(now())
+  id             Int       @id @default(autoincrement())
+  email          String?   @unique
+  password       String?
+  name           String?
+  image          String    @default("https://robohash.org/c143b89fb9077cdd6fd77269a7bfefb5?set=set4&bgset=&size=400x400")
+  membershipType String    @default("free")
+  membershipEnd  DateTime?
+  createdAt      DateTime  @default(now())
   // NextAuth 关联
-  accounts      Account[]
-  sessions      Session[]
+  accounts       Account[]
+  sessions       Session[]
 
   // 用户与单词进度的一对多
   userWordProgresses UserWordProgress[]

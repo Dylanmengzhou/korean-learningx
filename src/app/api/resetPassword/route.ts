@@ -5,7 +5,6 @@ import { updateUserPassword } from "@/app/actions/actions";
 export async function POST(request: NextRequest) {
     try {
         const updates = await request.json();
-        console.log("收到的数据:", updates);
 
         const { userid, currentPassword, newPassword } = updates;
 
@@ -20,7 +19,6 @@ export async function POST(request: NextRequest) {
 
 
         const res = await updateUserPassword(userid, currentPassword,newPassword);
-        console.log("更新结果:", res);
 
         if (!res.success) {
             return NextResponse.json(

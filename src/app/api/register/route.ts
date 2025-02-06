@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
 				email,
 				password: hashedPassword, // 应该存储哈希密码，而不是明文密码
 				name,
+				createdAt: new Date(),
 			},
 		});
 
