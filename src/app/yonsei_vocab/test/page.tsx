@@ -141,6 +141,9 @@ function TestPageContent() {
 
 	// ------------------ 加载单词数据 ------------------
 	useEffect(() => {
+		if (!session || session.user.membershipType !== "vip") {
+			return; // 用户未登录或无权限，不加载数据
+		}
 		async function loadWords() {
 			setLoading(true);
 			try {

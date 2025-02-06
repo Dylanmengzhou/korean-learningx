@@ -126,6 +126,10 @@ function VocabularyListContent() {
 	// 加载单词数据
 	// ----------------------------
 	useEffect(() => {
+		if (!session || session.user.membershipType !== "vip") {
+			setLoading(false);
+			return; // 用户未登录或无权限，不加载数据
+		}
 		async function loadWords() {
 			setLoading(true);
 			try {
@@ -156,7 +160,7 @@ function VocabularyListContent() {
 			}
 		}
 		loadWords();
-	}, [volume, bookSeries, chapter, status, userid]);
+	}, [volume, bookSeries, chapter, status, userid, session]);
 
 	/**
 	 * 把“待更新数组”里的数据一次性发到服务器

@@ -164,6 +164,9 @@ function StudyPageContent() {
 	// 1. 加载单词数据
 	// ----------------------------
 	useEffect(() => {
+		if (!session || session.user.membershipType !== "vip") {
+			return; // 用户未登录或无权限，不加载数据
+		}
 		async function loadWords() {
 			setLoading(true);
 			console.log("userid from useEffect:", userid);
@@ -195,7 +198,7 @@ function StudyPageContent() {
 			}
 		}
 		loadWords();
-	}, [volume, bookSeries, chapter, status, userid]);
+	}, [volume, bookSeries, chapter, status, userid, session]);
 
 	// ----------------------------
 	// 2. 批量更新提交逻辑
