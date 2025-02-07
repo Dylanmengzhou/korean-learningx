@@ -1,7 +1,7 @@
 "use client";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import LogoutButton from "../components/logout";
+import LogoutButton from "@/app/components/logout";
 import {
 	Card,
 	CardContent,
@@ -111,7 +111,10 @@ const TestPage = () => {
 				// 检查是否修改了邮箱
 				if (email !== session?.user?.email) {
 					setTimeout(() => {
-						signOut({ redirectTo: "/login", redirect: true });
+						signOut({
+							redirectTo: "/protected/login",
+							redirect: true,
+						});
 					}, 1000);
 				} else {
 					// 只修改了昵称，不登出，手动更新 session
@@ -201,7 +204,7 @@ const TestPage = () => {
 							/>
 							<Button
 								onClick={() => {
-									router.push("/resetPassword");
+									router.push("/protected/resetPassword");
 								}}
 							>
 								修改密码

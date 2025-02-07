@@ -49,6 +49,8 @@ const YonseiVocab = () => {
 			baseUrl = "/yonsei_vocab/vocabulary_list";
 		} else if (type === "test") {
 			baseUrl = "/yonsei_vocab/test";
+		} else if (type === "summary") {
+			baseUrl = "/yonsei_vocab/summary";
 		}
 
 		// 构造查询参数
@@ -392,6 +394,14 @@ const YonseiVocab = () => {
 							onClick={() => redirectToStudy("test")}
 						>
 							测试
+						</Button>
+					</div>
+					<div className="flex justify-center">
+						<Button
+							className="w-full rounded-full bg-yellow-500 text-white hover:bg-yellow-500 shadow-md font-bold"
+							onClick={() => redirectToStudy("summary")}
+						>
+							查看学习进度
 						</Button>
 					</div>
 				</div>

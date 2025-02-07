@@ -113,19 +113,19 @@ export default function Navigation() {
 									<Button
 										variant="outline"
 										className="text-black border-none"
-										onClick={() => handleLinkClick("/login")}
+										onClick={() => handleLinkClick("/protected/login")}
 									>
 										登录
 									</Button>
 									<Button
-										onClick={() => handleLinkClick("/register")}
+										onClick={() => handleLinkClick("/protected/register")}
 									>
 										注册
 									</Button>
 								</>
 							) : (
 								<div className="relative mr-20 flex justify-center items-center">
-									<Avatar onClick={() => handleLinkClick("/profile")}>
+									<Avatar onClick={() => handleLinkClick("/protected/profile")}>
 										<AvatarImage src={avatarUrl} />
 										<AvatarFallback>CN</AvatarFallback>
 									</Avatar>
@@ -167,7 +167,7 @@ export default function Navigation() {
 								<Button
 									variant="outline"
 									className="w-full"
-									onClick={() => handleLinkClick("/login")}
+									onClick={() => handleLinkClick("/protected/login")}
 								>
 									登录
 								</Button>
@@ -175,7 +175,7 @@ export default function Navigation() {
 							<div>
 								<Button
 									className="w-full"
-									onClick={() => handleLinkClick("/register")}
+									onClick={() => handleLinkClick("/protected/register")}
 								>
 									注册
 								</Button>
@@ -183,7 +183,7 @@ export default function Navigation() {
 						</>
 					) : (
 						<div className=" flex flex-col items-center justify-center gap-5">
-							<Avatar onClick={() => handleLinkClick("/profile")}>
+							<Avatar onClick={() => handleLinkClick("/protected/profile")}>
 								<AvatarImage src={avatarUrl} />
 								<AvatarFallback>CN</AvatarFallback>
 							</Avatar>
