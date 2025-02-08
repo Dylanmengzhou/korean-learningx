@@ -1,4 +1,5 @@
 "use client";
+import { Switch } from "@/components/ui/switch";
 import { PartyPopper } from "lucide-react";
 import { Annoyed } from "lucide-react";
 import { motion } from "framer-motion";
@@ -9,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { Label } from "@/components/ui/label";
 
 interface Word {
 	id: number;
@@ -96,6 +98,7 @@ function TestPageContent() {
 	const [statusTitle, setStatusTitle] = useState("");
 	const [chapterTitle, setChapterTitle] = useState("");
 	const [volumeTitle, setVolumeTitle] = useState("");
+	const [chineseDisplay, setChineseDisplay] = useState(true);
 
 	// correctList 用于整体记录每道题的状态
 	const [correctList, setCorrectList] = useState<number[]>([]);
@@ -241,7 +244,7 @@ function TestPageContent() {
 		}
 
 		loadWords();
-	}, []);
+	}, [session, volume, bookSeries, chapter, status, userid]);
 
 	useEffect(() => {
 		// 只有在开始测试后，才自动聚焦（可选条件）
@@ -298,6 +301,9 @@ function TestPageContent() {
 				setInputValue(inputWordHistory[newIndex] ?? "");
 				setIsNavigating(false);
 			}, 300); // 给个 300ms 做小过渡，随需求
+		} else {
+			// 最后一题了，直接把 index 设置成 words.length，让它触发总结页面
+			setIndex(words.length);
 		}
 	};
 
@@ -314,20 +320,41 @@ function TestPageContent() {
 		});
 
 		// 判断对错
-		if (inputValue.trim() === words[index].chinese.trim()) {
-			// 如果用户填的和正确答案一样 => 直接进入下一题（对了）
-			proceedToNext(1);
+		if (chineseDisplay === true) {
+			if (inputValue.trim() === words[index].chinese.trim()) {
+				// 如果用户填的和正确答案一样 => 直接进入下一题（对了）
+				proceedToNext(1);
+			}
+			if (inputValue.trim() === "") {
+				proceedToNext(-1);
+			}
+			if (
+				inputValue.trim() !== words[index].chinese.trim() &&
+				inputValue.trim() !== ""
+			) {
+				// 如果用户填的答案和正确答案不一样 => 弹窗，交给弹窗按钮来决定真正的对错
+				setPopWindow(true);
+			}
+		} else {
+			if (inputValue.trim() === words[index].korean.trim()) {
+				// 如果用户填的和正确答案一样 => 直接进入下一题（对了）
+				proceedToNext(1);
+			}
+			if (inputValue.trim() === "") {
+				proceedToNext(-1);
+			}
+			if (
+				inputValue.trim() !== words[index].korean.trim() &&
+				inputValue.trim() !== ""
+			) {
+				// 如果用户填的答案和正确答案不一样 => 弹窗，交给弹窗按钮来决定真正的对错
+				setPopWindow(true);
+			}
 		}
-		if (inputValue.trim() === "") {
-			proceedToNext(-1);
-		}
-		if (
-			inputValue.trim() !== words[index].chinese.trim() &&
-			inputValue.trim() !== ""
-		) {
-			// 如果用户填的答案和正确答案不一样 => 弹窗，交给弹窗按钮来决定真正的对错
-			setPopWindow(true);
-		}
+	};
+
+	const handleLanguage = () => {
+		setChineseDisplay((prev) => !prev);
 	};
 
 	// ------------------ 点击上一个按钮 ------------------
@@ -373,10 +400,6 @@ function TestPageContent() {
 					<p>请先登录</p>
 					<Button onClick={() => router.push("/login")}>登录</Button>
 				</div>
-			) : session?.user?.membershipType !== "vip" ? (
-				<div className="h-svh flex items-center justify-center flex-col gap-5">
-					<p>您还不是VIP，请向管理员申请</p>
-				</div>
 			) : loading ? (
 				// 2. 正在加载
 				<div className="flex flex-col items-center justify-center h-full w-full bg-yellow-50 pt-20 text-right">
@@ -414,6 +437,19 @@ function TestPageContent() {
 				<>
 					<div className="w-full bg-yellow-50 pt-20">
 						<div className="pr-8 font-bold lg:text-xl gap-3 flex justify-end">
+							{index === words.length ? (
+								<div className=""></div>
+							) : (
+								<div className="flex items-center space-x-2">
+									<Label htmlFor="korean-chinese">中文</Label>
+									<Switch
+										id="korean-chinese"
+										checked={!chineseDisplay}
+										onClick={handleLanguage}
+									/>
+									<Label htmlFor="korean-chinese">韩语</Label>
+								</div>
+							)}
 							<div>
 								<Button
 									variant={"outline"}
@@ -432,87 +468,131 @@ function TestPageContent() {
 					</div>
 
 					<div className="h-full w-full flex flex-col items-center justify-center bg-yellow-50">
-						{/* 单词 & 答案 */}
-						<div className="p-2 pb-5 pt-12 lg:pb-20 flex flex-col gap-2 items-center justify-center">
-							<div
-								className={`text-4xl ${
-									correctList[index] === 1
-										? "text-green-500"
-										: correctList[index] === -1
-										? "text-red-500"
-										: "text-black"
-								} pb-0 font-bold`}
-							>
-								{words[index]?.korean}
+						{index === words.length ? (
+							<div className="p-6 bg-white shadow-lg rounded-2xl border border-gray-200 w-2/3 text-center flex flex-col gap-6">
+								<h2 className="text-3xl font-extrabold text-gray-800 mb-4">
+									测试完成 🎉
+								</h2>
+								<p className="text-xl font-semibold text-gray-600">
+									你完成了 {words.length} 道题目！
+								</p>
+								<p className="text-xl font-semibold text-gray-600">
+									正确率：
+									<span className="text-green-500 font-bold">
+										{Math.round(
+											(correctList.filter((x) => x === 1).length /
+												words.length) *
+												100
+										)}
+										%
+									</span>
+								</p>
+								<Button
+									onClick={() => router.push("/yonsei_vocab")}
+									className="mt-4"
+								>
+									返回索引页
+								</Button>
 							</div>
-							{correctList[index] === -1 ? (
-								<div className="flex justify-center items-center text-xl text-red-500">
-									答案：{words[index]?.chinese}
+						) : (
+							<>
+								{/* 单词 & 答案 */}
+								<div className="p-2 pb-5 pt-12 lg:pb-20 flex flex-col gap-2 items-center justify-center">
+									<div
+										className={`text-4xl ${
+											correctList[index] === 1
+												? "text-green-500"
+												: correctList[index] === -1
+												? "text-red-500"
+												: "text-black"
+										} pb-0 font-bold`}
+									>
+										{chineseDisplay
+											? words[index]?.korean
+											: words[index]?.chinese}
+									</div>
+									{correctList[index] === -1 ? (
+										<div className="flex justify-center items-center text-xl text-red-500">
+											答案：
+											{chineseDisplay
+												? words[index]?.chinese
+												: words[index]?.korean}
+										</div>
+									) : (
+										<div className="invisible flex justify-center items-center text-xl text-red-500">
+											----
+										</div>
+									)}
 								</div>
-							) : (
-								<div className="invisible flex justify-center items-center text-xl text-red-500">
-									----
+
+								{/* 输入框 */}
+								<div>
+									<div className="p-2 w-svw flex justify-center items-center">
+										<label htmlFor="" />
+										<input
+											className={`rounded-none w-1/2 lg:w-2/3 text-center border-b-2 border-black bg-inherit focus:outline-none focus:border-b-2 focus:border-black text-xl ${
+												correctList[index] === 1
+													? "text-green-500"
+													: correctList[index] === -1
+													? "text-red-500"
+													: "text-black"
+											}`}
+											type="text"
+											title="shit"
+											value={inputValue}
+											placeholder={isFocused ? "" : "请在这里输入"}
+											onFocus={() => setIsFocused(true)}
+											onBlur={() => setIsFocused(inputValue !== "")}
+											onChange={(e) => setInputValue(e.target.value)}
+											ref={inputRef}
+											onKeyDown={(e) => {
+												if (e.key === "Enter") {
+													handleNext();
+												}
+											}}
+										/>
+									</div>
+									{/* 按钮区 */}
+									<div className="flex items-center justify-center gap-5 pt-5">
+										<Button
+											onClick={handlePrev}
+											disabled={isNavigating}
+										>
+											上一个
+										</Button>
+										<Button
+											onClick={handlePlay}
+											disabled={isNavigating}
+										>
+											播放
+										</Button>
+										<Button
+											onClick={handleNext}
+											disabled={isNavigating}
+										>
+											{index === words.length - 1 ? "完成" : "下一个"}
+										</Button>
+									</div>
 								</div>
-							)}
-						</div>
 
-						{/* 输入框 */}
-						<div>
-							<div className="p-2 w-svw flex justify-center items-center">
-								<label htmlFor="" />
-								<input
-									className={`rounded-none w-1/2 lg:w-2/3 text-center border-b-2 border-black bg-inherit focus:outline-none focus:border-b-2 focus:border-black text-xl ${
-										correctList[index] === 1
-											? "text-green-500"
-											: correctList[index] === -1
-											? "text-red-500"
-											: "text-black"
-									}`}
-									type="text"
-									title="shit"
-									value={inputValue}
-									placeholder={isFocused ? "" : "请在这里输入"}
-									onFocus={() => setIsFocused(true)}
-									onBlur={() => setIsFocused(inputValue !== "")}
-									onChange={(e) => setInputValue(e.target.value)}
-									ref={inputRef}
-									onKeyDown={(e) => {
-										if (e.key === "Enter") {
-											handleNext();
-										}
-									}}
-								/>
-							</div>
-							{/* 按钮区 */}
-							<div className="flex items-center justify-center gap-5 pt-5">
-								<Button onClick={handlePrev} disabled={isNavigating}>
-									上一个
-								</Button>
-								<Button onClick={handlePlay} disabled={isNavigating}>
-									播放
-								</Button>
-								<Button onClick={handleNext} disabled={isNavigating}>
-									下一个
-								</Button>
-							</div>
-						</div>
-
-						{/* 底部进度 */}
-						<div className="lg:pt-16 pt-10 w-full flex flex-col items-center justify-center gap-2">
-							<Progress
-								value={((index + 1) / words.length) * 100}
-								className="w-2/3"
-							/>
-							<div>
-								{index + 1} / {words.length}
-							</div>
-						</div>
+								{/* 底部进度 */}
+								<div className="lg:pt-16 pt-10 w-full flex flex-col items-center justify-center gap-2">
+									<Progress
+										value={((index + 1) / words.length) * 100}
+										className="w-2/3"
+									/>
+									<div>
+										{index + 1} / {words.length}
+									</div>
+								</div>
+							</>
+						)}
 					</div>
 
 					{/* 弹窗（popWindow） */}
 					{popWindow && (
 						<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
-							<div className="bg-white p-6 rounded-xl shadow-inner w-[300px] text-center flex flex-col gap-6">
+							<div className="bg-white p-6 rounded-xl shadow-inner w-[300px] lg:w-2/5 text-center flex flex-col gap-6">
 								<div className="p-6 bg-white shadow-lg rounded-2xl border border-gray-200 flex flex-col gap-3">
 									<h2 className="text-3xl font-extrabold text-gray-800 mb-4">
 										确定一下答案
@@ -533,7 +613,9 @@ function TestPageContent() {
 											正确答案是：
 											<span className="font-extrabold text-black">
 												{" "}
-												{words[index]?.chinese}{" "}
+												{chineseDisplay
+													? words[index]?.chinese
+													: words[index]?.korean}{" "}
 											</span>
 										</p>
 									</div>

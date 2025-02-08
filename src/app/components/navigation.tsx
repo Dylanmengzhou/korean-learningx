@@ -12,6 +12,19 @@ import {
 } from "@/components/ui/avatar";
 import LogoutButton from "./logout";
 
+import { ZCOOL_KuaiLe } from "next/font/google";
+import { Kosugi_Maru } from "next/font/google";
+const kuaile = ZCOOL_KuaiLe({
+	weight: "400",
+	subsets: ["latin"],
+	display: "swap",
+});
+const rampart = Kosugi_Maru({
+	weight: "400",
+	subsets: ["latin"],
+	display: "swap",
+});
+
 export default function Navigation() {
 	const session = useSession();
 	const router = useRouter();
@@ -70,16 +83,46 @@ export default function Navigation() {
 						: "bg-transparent text-black"
 				}`}
 			>
-				<div className="flex w-full justify-between p-5">
+				<div className="flex w-full justify-between p-5 items-center">
 					<button className="" onClick={() => handleLinkClick("/")}>
 						{name != "" ? (
-							<div className="font-bold text-2xl">
-								{name + "的"}韩语笔记
+							<div className="font-bold text-2xl flex gap-[1px]">
+								<div
+									className={`${
+										isScrolled
+											? "bg-transparent justify-center items-center rounded-md flex  text-3xl  "
+											: "bg-transparent justify-center items-center rounded-md flex  text-3xl  "
+									} ${kuaile.className}`}
+								>
+									{name}
+								</div>
+								<div
+									className={`${
+										rampart.className
+									} flex justify-center items-center text-2xl font-bold ${
+										isScrolled ? "bg-transparent" : "bg-transparent"
+									}`}
+								>
+									の
+								</div>
+								<div
+									className={`${
+										kuaile.className
+									} flex justify-center items-center text-3xl rounded-md ${
+										isScrolled ? "bg-transparent" : "bg-transparent"
+									}`}
+								>
+									韩语笔记
+								</div>
 							</div>
 						) : session.status != "unauthenticated" ? (
 							<div className="font-bold text-2xl"></div>
 						) : (
-							<div className="font-bold text-2xl">韩语笔记</div>
+							<div
+								className={`${kuaile.className} flex justify-center items-center text-3xl rounded-md`}
+							>
+								韩语笔记
+							</div>
 						)}
 					</button>
 
@@ -95,14 +138,18 @@ export default function Navigation() {
 							</button>
 						) : (
 							<nav className="flex gap-6 pt-2">
-								{menuItems.map((item) => (
-									<button
-										key={item.name}
-										onClick={() => handleLinkClick(item.link)}
-									>
-										{item.name}
-									</button>
-								))}
+								<div className="flex gap-6 bg-white p-2 px-5 rounded-full justify-center items-center">
+									{menuItems.map((item) => (
+										<button
+											className="text-bold"
+											type="button"
+											key={item.name}
+											onClick={() => handleLinkClick(item.link)}
+										>
+											{item.name}
+										</button>
+									))}
+								</div>
 							</nav>
 						))}
 
@@ -113,19 +160,27 @@ export default function Navigation() {
 									<Button
 										variant="outline"
 										className="text-black border-none"
-										onClick={() => handleLinkClick("/protected/login")}
+										onClick={() =>
+											handleLinkClick("/protected/login")
+										}
 									>
 										登录
 									</Button>
 									<Button
-										onClick={() => handleLinkClick("/protected/register")}
+										onClick={() =>
+											handleLinkClick("/protected/register")
+										}
 									>
 										注册
 									</Button>
 								</>
 							) : (
 								<div className="relative mr-20 flex justify-center items-center">
-									<Avatar onClick={() => handleLinkClick("/protected/profile")}>
+									<Avatar
+										onClick={() =>
+											handleLinkClick("/protected/profile")
+										}
+									>
 										<AvatarImage src={avatarUrl} />
 										<AvatarFallback>CN</AvatarFallback>
 									</Avatar>
@@ -175,7 +230,9 @@ export default function Navigation() {
 							<div>
 								<Button
 									className="w-full"
-									onClick={() => handleLinkClick("/protected/register")}
+									onClick={() =>
+										handleLinkClick("/protected/register")
+									}
 								>
 									注册
 								</Button>
@@ -183,7 +240,9 @@ export default function Navigation() {
 						</>
 					) : (
 						<div className=" flex flex-col items-center justify-center gap-5">
-							<Avatar onClick={() => handleLinkClick("/protected/profile")}>
+							<Avatar
+								onClick={() => handleLinkClick("/protected/profile")}
+							>
 								<AvatarImage src={avatarUrl} />
 								<AvatarFallback>CN</AvatarFallback>
 							</Avatar>

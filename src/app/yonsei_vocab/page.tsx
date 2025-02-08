@@ -390,7 +390,7 @@ const YonseiVocab = () => {
 					</div>
 					<div className="flex justify-center">
 						<Button
-							className="w-full rounded-full bg-yellow-500 text-white hover:bg-yellow-500 shadow-md font-bold"
+							className="w-full rounded-full bg-gradient-to-r from-red-400 to-pink-500 text-white  shadow-md font-bold"
 							onClick={() => redirectToStudy("test")}
 						>
 							测试
@@ -398,7 +398,7 @@ const YonseiVocab = () => {
 					</div>
 					<div className="flex justify-center">
 						<Button
-							className="w-full rounded-full bg-yellow-500 text-white hover:bg-yellow-500 shadow-md font-bold"
+							className="w-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md font-bold"
 							onClick={() => redirectToStudy("summary")}
 						>
 							查看学习进度

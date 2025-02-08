@@ -110,6 +110,7 @@ function StudyPageContent() {
 	const [loaded, setLoaded] = useState<boolean[]>([]);
 	const { data: session } = useSession();
 	const router = useRouter();
+	const [isStudyFinished, setIsStudyFinished] = useState(false);
 
 	// Keen-Slider 当前索引
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -118,7 +119,9 @@ function StudyPageContent() {
 	const [sliderRef, instanceRef] = useKeenSlider<HTMLDivElement>({
 		initial: 0,
 		slideChanged(slider) {
-			setCurrentIndex(slider.track.details.rel);
+			if (!isStudyFinished) {
+				setCurrentIndex(slider.track.details.rel);
+			}
 		},
 		animationEnded(slider) {
 			setCurrentIndex(slider.track.details.rel);
@@ -222,7 +225,12 @@ function StudyPageContent() {
 		// 1) 立即切换到下一张，优先保障 UI 交互的流畅度
 		// 加个时间延迟，让用户感觉到切换
 		setTimeout(() => {
-			instanceRef.current?.next();
+			if (index === words.length - 1) {
+				// 直接标记 “学完”
+				setIsStudyFinished(true);
+			} else {
+				instanceRef.current?.next();
+			}
 		}, 500);
 
 		// 2) 把更新逻辑放到低优先级中
@@ -263,6 +271,11 @@ function StudyPageContent() {
 
 	// 下一张
 	const handleNext = () => {
+		if (currentIndex === words.length - 1) {
+			setCurrentIndex(words.length); // 触发显示“完成”页
+			return;
+		}
+		// 否则正常滑动
 		instanceRef.current?.next();
 	};
 
@@ -304,10 +317,6 @@ function StudyPageContent() {
 					<p>请先登录</p>
 					<Button onClick={() => router.push("/login")}>登录</Button>
 				</div>
-			) : session?.user?.membershipType !== "vip" ? (
-				<div className="h-svh flex items-center justify-center flex-col gap-5">
-					<p>您还不是VIP，请向管理员申请</p>
-				</div>
 			) : loading ? (
 				// 加载中状态
 				<div className="flex flex-col items-center justify-center h-svh">
@@ -320,6 +329,24 @@ function StudyPageContent() {
 					<Card>
 						<CardContent className="py-6 px-8 text-center">
 							<p className="text-lg">这里没有单词</p>
+						</CardContent>
+					</Card>
+				</div>
+			) : isStudyFinished ? (
+				// 学习完成的页面
+				<div className="flex flex-col items-center justify-center h-svh">
+					<Card className="shadow-md p-8 text-center">
+						<CardContent>
+							<h2 className="text-2xl font-bold">学习完成！🎉</h2>
+							<p className="text-gray-600 mt-2">
+								你已经学完所有单词！
+							</p>
+							<Button
+								className="mt-4"
+								onClick={() => router.push("/yonsei_vocab")}
+							>
+								返回单词索引
+							</Button>
 						</CardContent>
 					</Card>
 				</div>

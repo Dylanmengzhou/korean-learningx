@@ -35,6 +35,12 @@ const Vocabulary = () => {
                         description="《延世韩国语》1-6册"
                         direct_url="/yonsei_vocab"
 					/>
+					<CardVocabMain
+						img_url="/word_background.png"
+						title="TOPIK模拟测试"
+                        description="《延世韩国语》1-6册"
+                        direct_url="/topik"
+					/>
 
                 </div>
                 <div className="flex">

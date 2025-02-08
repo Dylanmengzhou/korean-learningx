@@ -141,7 +141,7 @@ export function DataVisual() {
 							<button
 								key={chart}
 								data-active={activeChart === chart}
-								className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t py-4 text-center even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6 items-center"
+								className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t py-4 text-center  data-[active=true]:bg-muted/50 border-l sm:px-8 sm:py-6 items-center"
 								onClick={() =>
 									setActiveChart(chart as keyof typeof chartConfig)
 								}
