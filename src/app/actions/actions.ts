@@ -30,6 +30,11 @@ export async function getAllWord(
   chapter: number = 0, // 默认值设为 0
   status: number = -1 // 默认值设为 -1
 ) {
+  console.log("userId", userId);
+  console.log("volume", volume);
+  console.log("bookSeries", bookSeries);
+  console.log("chapter", chapter);
+  console.log("status", status);
   const whereCondition = {
     ...(volume ? { volume: Number(volume) } : {}),
     ...(bookSeries ? { bookSeries } : {}),

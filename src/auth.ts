@@ -29,6 +29,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        // 使用类型断言获取 membershipType
+        token.membershipType = (user as any).membershipType;
       }
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
