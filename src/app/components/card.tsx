@@ -1,15 +1,21 @@
+"use client";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // 输入参数格式
 interface CardProps {
 	title: string;
 	description?: string;
 	image_url?: string;
+	link?: string;
 }
 
-const Card = ({ title, description, image_url }: CardProps) => {
+const Card = ({ title, description, image_url,	link }: CardProps) => {
+	const router = useRouter();
 	return (
-		<div className=" relative bg-white rounded-md p-3 py-5 drop-shadow-lg shadow-md border-gray-200">
+		<div className=" relative bg-white rounded-md p-3 py-5 drop-shadow-lg shadow-md border-gray-200" onClick={() => {
+			router.push(link || "/");
+		}}>
 			<div className="items-center flex justify-center">
 				<Image
 					src={image_url || "/default-image.png"}

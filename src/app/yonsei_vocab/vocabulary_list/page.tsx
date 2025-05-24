@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { ThumbsUp, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useIntersectionObserver } from "@uidotdev/usehooks";
+
 interface Word {
 	id: number;
 	korean: string;
@@ -86,6 +88,72 @@ async function batchUpdateWordsStatus(
 }
 
 /**
+ * 单词卡片组件
+ */
+const WordCard = ({
+	word,
+	index,
+	selectedState,
+	onSelectState
+}: {
+	word: Word;
+	index: number;
+	selectedState: "认识" | "不认识" | "模糊" | null;
+	onSelectState: (index: number, state: "认识" | "不认识" | "模糊") => void;
+}) => {
+	const [ref, entry] = useIntersectionObserver({
+		threshold: 0,
+		root: null,
+		rootMargin: "100px",
+	});
+
+	const cardColors = {
+		认识: "bg-green-300/30",
+		不认识: "bg-red-200",
+		模糊: "bg-orange-200",
+	};
+
+	return (
+		<div ref={ref} className="w-full">
+			{entry?.isIntersecting && (
+				<Card
+					className={`w-full max-w-7xl backdrop-blur-3xl ${
+						selectedState ? cardColors[selectedState] : "bg-white"
+					}`}
+				>
+					<CardHeader className="flex">
+						<CardTitle className="flex flex-row gap-5">
+							<div className="font-bold text-xl">{word.korean}</div>
+							<div className="bg-gray-200 flex justify-center items-center px-2 py-1 rounded-sm">
+								{word.type}
+							</div>
+							<div className="font-light text-xl">{word.chinese}</div>
+						</CardTitle>
+					</CardHeader>
+
+					<CardContent className="flex flex-col gap-2">
+						<div>
+							<div className="font-bold text-lg">搭配：{word.phrase}</div>
+							<div className="font-light text-base">{word.phraseCn}</div>
+						</div>
+						<div>
+							<div className="font-bold text-lg">例句：{word.example}</div>
+							<div className="font-light text-base">{word.exampleCn}</div>
+						</div>
+					</CardContent>
+
+					<CardFooter className="flex justify-center gap-2">
+						<Button onClick={() => onSelectState(index, "认识")}>认识</Button>
+						<Button onClick={() => onSelectState(index, "不认识")}>不认识</Button>
+						<Button onClick={() => onSelectState(index, "模糊")}>模糊</Button>
+					</CardFooter>
+				</Card>
+			)}
+		</div>
+	);
+};
+
+/**
  * 列表学习页面
  */
 function VocabularyListContent() {
@@ -114,13 +182,6 @@ function VocabularyListContent() {
 	 * 缓存需要提交到数据库的更新
 	 * 每次用户标记一个单词，就 push 进来 { id, status }
 	 */
-
-	// 不同状态对应的卡片背景色
-	const cardColors = {
-		认识: "bg-green-300/30",
-		不认识: "bg-red-200",
-		模糊: "bg-orange-200",
-	};
 
 	// ----------------------------
 	// 加载单词数据
@@ -163,7 +224,7 @@ function VocabularyListContent() {
 	}, [volume, bookSeries, chapter, status, userid, session]);
 
 	/**
-	 * 把“待更新数组”里的数据一次性发到服务器
+	 * 把"待更新数组"里的数据一次性发到服务器
 	 */
 	async function handleBatchUpdate(
 		updates: { id: number; status: number; userId: number }[]
@@ -178,7 +239,7 @@ function VocabularyListContent() {
 	}
 
 	/**
-	 * 用户点击“认识 / 不认识 / 模糊”时，保存界面状态
+	 * 用户点击"认识 / 不认识 / 模糊"时，保存界面状态
 	 * 并把对应 { id, status } 压入更新缓冲
 	 */
 	const handleSelectState = (
@@ -273,83 +334,23 @@ function VocabularyListContent() {
 			) : (
 				<>
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-20 lg:pt-40 items-center justify-items-center text-black w-full h-full bg-gray-100 px-3 mx-auto">
-						{words.map((word, index) => {
-							const currentState = selectedStates[index] || null;
-							return (
-								<Card
-									key={word.id}
-									// 保留你的原有样式 + 根据状态染色
-									className={`
-                w-full max-w-7xl backdrop-blur-3xl
-                ${
-									currentState ? cardColors[currentState] : "bg-white"
-								}
-              `}
-								>
-									<CardHeader className="flex">
-										<CardTitle className="flex flex-row gap-5">
-											<div className=" font-bold text-xl">
-												{word.korean}
-											</div>
-											<div className=" bg-gray-200 flex justify-center items-center px-2 py-1 rounded-sm">
-												{word.type}
-											</div>
-											<div className=" font-light text-xl">
-												{word.chinese}
-											</div>
-										</CardTitle>
-									</CardHeader>
-
-									<CardContent className="flex flex-col gap-2">
-										<div>
-											<div className="font-bold text-lg">
-												搭配：{word.phrase}
-											</div>
-											<div className="font-light text-base">
-												{word.phraseCn}
-											</div>
-										</div>
-										<div>
-											<div className="font-bold text-lg">
-												例句：{word.example}
-											</div>
-											<div className="font-light text-base">
-												{word.exampleCn}
-											</div>
-										</div>
-									</CardContent>
-
-									<CardFooter className="flex justify-center gap-2">
-										<Button
-											onClick={() => handleSelectState(index, "认识")}
-										>
-											认识
-										</Button>
-										<Button
-											onClick={() =>
-												handleSelectState(index, "不认识")
-											}
-										>
-											不认识
-										</Button>
-										<Button
-											onClick={() => handleSelectState(index, "模糊")}
-										>
-											模糊
-										</Button>
-									</CardFooter>
-								</Card>
-							);
-						})}
+						{words.map((word, index) => (
+							<WordCard
+								key={word.id}
+								word={word}
+								index={index}
+								selectedState={selectedStates[index] || null}
+								onSelectState={handleSelectState}
+							/>
+						))}
 					</div>
 
-					{/* 底部“这就是全部了”提示 */}
 					<div className="my-5 grid grid-cols-1 justify-items-center items-center gap-2 backdrop-blur-3xl">
 						<div>
 							<ThumbsUp />
 						</div>
 						<div>这就是全部了</div>
-						<hr className=" w-1/6 h-1 bg-gray-700 rounded-full" />
+						<hr className="w-1/6 h-1 bg-gray-700 rounded-full" />
 					</div>
 				</>
 			)}

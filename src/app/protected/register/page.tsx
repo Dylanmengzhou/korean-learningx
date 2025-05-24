@@ -50,7 +50,7 @@ export default function RegisterPage() {
 				}
 
 				// 注册成功后，跳转到登录页
-				router.push("/login");
+				router.push("/protected/login");
 			} catch (err) {
 				if (err instanceof Error) {
 					setError(err.message);
